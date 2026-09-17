@@ -1464,9 +1464,13 @@ function ShoppingScreen({ data, generateShoppingList, toggleShoppingItem, clearS
       </button>
 
       {data.shoppingList.length === 0 ? (
-        <EmptyState icon={<ShoppingCart size={32} />}
-          title="Liste vide"
-          body={weekPlanCount === 0 ? "Planifie des recettes sur cette semaine, ou ajoute un article directement." : "Clique sur « Générer depuis cette semaine » pour construire ta liste."} />
+        <div className="mp-card" style={{ textAlign: "center", padding: "34px 20px", color: "var(--ink-soft)" }}>
+          <ShoppingCart size={26} style={{ opacity: 0.4, marginBottom: 10 }} />
+          <div className="mp-serif" style={{ fontSize: 16, color: "var(--ink)", marginBottom: 4 }}>Panier vide</div>
+          <div style={{ fontSize: 13, lineHeight: 1.5 }}>
+            {weekPlanCount === 0 ? "Planifie des recettes sur cette semaine, ou ajoute un article directement." : "Clique sur « Générer depuis cette semaine » pour construire ta liste."}
+          </div>
+        </div>
       ) : (
         categoriesPresent.map((cat) => (
           <div key={cat}>
