@@ -39,6 +39,7 @@ const TAG_NAMES = [
 const SEED_RECIPES = [
   {
     titre: "Raviolis, crème, jambon, beurre",
+    photo: "/recipes/raviolis-creme-jambon-beurre.jpg",
     temps_preparation: 10, difficulte: "facile", prix_estime: 4,
     tags: ["rapide", "économique"],
     etapes: ["Faire chauffer une noix de beurre dans une poêle.", "Ajouter les raviolis et un fond d'eau, couvrir 5 min.", "Ajouter la crème et le jambon coupé en lanières, mélanger 2 min à feu doux."],
@@ -46,6 +47,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Pâtes à la carbonara",
+    photo: "/recipes/pates-carbonara.jpg",
     temps_preparation: 20, difficulte: "facile", prix_estime: 6,
     tags: ["rapide"],
     etapes: ["Cuire les pâtes dans l'eau bouillante salée.", "Faire revenir les lardons à sec.", "Mélanger œufs, parmesan et poivre dans un bol.", "Égoutter les pâtes, mélanger hors du feu avec les lardons puis l'appareil œufs-parmesan."],
@@ -53,6 +55,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Curry de pois chiches",
+    photo: "/recipes/curry-pois-chiches.jpg",
     temps_preparation: 30, difficulte: "facile", prix_estime: 5,
     tags: ["végan", "économique", "sans gluten"],
     etapes: ["Faire revenir oignon et ail dans l'huile.", "Ajouter les épices puis les tomates concassées, laisser réduire 5 min.", "Ajouter les pois chiches et le lait de coco, mijoter 15 min."],
@@ -60,6 +63,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Poulet rôti aux herbes",
+    photo: "/recipes/poulet-roti-herbes.jpg",
     temps_preparation: 90, difficulte: "moyen", prix_estime: 12,
     tags: ["riche en protéines", "hiver"],
     etapes: ["Préchauffer le four à 200°C.", "Frotter le poulet avec beurre, thym et ail.", "Enfourner 1h15 en arrosant régulièrement."],
@@ -67,6 +71,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Salade de lentilles, feta, tomates",
+    photo: "/recipes/salade-lentilles-feta-tomates.jpg",
     temps_preparation: 15, difficulte: "facile", prix_estime: 5,
     tags: ["végétarien", "été", "rapide"],
     etapes: ["Rincer les lentilles cuites.", "Couper tomates et feta en dés.", "Mélanger le tout avec un filet d'huile d'olive et du vinaigre."],
@@ -74,6 +79,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Risotto aux champignons",
+    photo: "/recipes/risotto-champignons.jpg",
     temps_preparation: 35, difficulte: "moyen", prix_estime: 7,
     tags: ["végétarien"],
     etapes: ["Faire revenir l'oignon émincé dans du beurre.", "Ajouter le riz, nacrer 2 min.", "Verser le bouillon louche par louche en remuant jusqu'à absorption complète, 20 min.", "Ajouter les champignons poêlés et le parmesan hors du feu."],
@@ -81,6 +87,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Omelette aux fines herbes",
+    photo: "/recipes/omelette-fines-herbes.jpg",
     temps_preparation: 10, difficulte: "facile", prix_estime: 2,
     tags: ["rapide", "économique", "végétarien"],
     etapes: ["Battre les œufs avec sel, poivre et herbes.", "Cuire dans une poêle beurrée à feu moyen, plier en deux."],
@@ -88,6 +95,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Chili sin carne",
+    photo: "/recipes/chili-sin-carne.jpg",
     temps_preparation: 40, difficulte: "moyen", prix_estime: 5,
     tags: ["végan", "économique", "hiver"],
     etapes: ["Faire revenir oignon, poivron et ail.", "Ajouter tomates concassées, haricots rouges, maïs et épices.", "Laisser mijoter 25 min à couvert."],
@@ -95,6 +103,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Saumon, riz, brocolis",
+    photo: "/recipes/saumon-riz-brocolis.jpg",
     temps_preparation: 25, difficulte: "facile", prix_estime: 9,
     tags: ["riche en protéines", "sans gluten"],
     etapes: ["Cuire le riz.", "Cuire le saumon à la poêle 4 min de chaque côté.", "Cuire les brocolis à la vapeur 8 min."],
@@ -102,6 +111,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Soupe potiron-châtaigne",
+    photo: "/recipes/soupe-potiron-chataigne.jpg",
     temps_preparation: 35, difficulte: "facile", prix_estime: 4,
     tags: ["végan", "hiver", "économique", "sans gluten"],
     etapes: ["Faire revenir l'oignon.", "Ajouter le potiron coupé et les châtaignes, couvrir d'eau.", "Cuire 25 min puis mixer."],
@@ -109,6 +119,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Tartines avocat, œuf poché",
+    photo: "/recipes/tartines-avocat-oeuf-poche.jpg",
     temps_preparation: 15, difficulte: "facile", prix_estime: 4,
     tags: ["végétarien", "rapide"],
     etapes: ["Griller le pain.", "Écraser l'avocat avec citron, sel, poivre sur les tartines.", "Pocher les œufs 3 min dans l'eau frémissante vinaigrée, déposer sur les tartines."],
@@ -116,6 +127,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Tajine de légumes",
+    photo: "/recipes/tajine-legumes.jpg",
     temps_preparation: 50, difficulte: "moyen", prix_estime: 6,
     tags: ["végan", "sans gluten", "hiver"],
     etapes: ["Faire revenir oignon et épices.", "Ajouter carottes, courgettes, pois chiches et un peu d'eau.", "Mijoter 35 min à couvert."],
@@ -123,6 +135,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Gratin dauphinois",
+    photo: "/recipes/gratin-dauphinois.jpg",
     temps_preparation: 75, difficulte: "moyen", prix_estime: 4,
     tags: ["végétarien", "hiver", "économique"],
     etapes: ["Préchauffer le four à 180°C.", "Couper les pommes de terre en fines rondelles.", "Disposer en couches dans un plat avec crème, lait, ail et muscade.", "Cuire 1h15."],
@@ -130,6 +143,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Poke bowl thon-mangue",
+    photo: "/recipes/poke-bowl-thon-mangue.jpg",
     temps_preparation: 20, difficulte: "facile", prix_estime: 8,
     tags: ["été", "riche en protéines", "sans gluten"],
     etapes: ["Cuire le riz vinaigré.", "Couper thon, mangue et concombre en dés.", "Dresser le bol et ajouter sésame et sauce soja."],
@@ -137,6 +151,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Pancakes moelleux",
+    photo: "/recipes/pancakes-moelleux.jpg",
     temps_preparation: 20, difficulte: "facile", prix_estime: 3,
     tags: ["sucré", "économique"],
     etapes: ["Mélanger farine, levure, sucre et sel.", "Ajouter œuf, lait et beurre fondu, fouetter.", "Cuire des petites louches à la poêle 2 min de chaque côté."],
@@ -144,6 +159,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Quiche lorraine",
+    photo: "/recipes/quiche-lorraine.jpg",
     temps_preparation: 50, difficulte: "moyen", prix_estime: 5,
     tags: ["économique"],
     etapes: ["Préchauffer le four à 190°C.", "Foncer un moule avec la pâte.", "Mélanger œufs, crème, lardons, verser sur la pâte.", "Cuire 35 min."],
@@ -151,6 +167,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Bowl quinoa, légumes rôtis, houmous",
+    photo: "/recipes/bowl-quinoa-legumes-rotis-houmous.jpg",
     temps_preparation: 35, difficulte: "facile", prix_estime: 6,
     tags: ["végan", "sans gluten", "riche en protéines"],
     etapes: ["Cuire le quinoa.", "Rôtir les légumes coupés 25 min à 200°C avec huile d'olive.", "Dresser le bol avec le houmous."],
@@ -158,6 +175,7 @@ const SEED_RECIPES = [
   },
   {
     titre: "Croque-monsieur",
+    photo: "/recipes/croque-monsieur.jpg",
     temps_preparation: 15, difficulte: "facile", prix_estime: 3,
     tags: ["rapide", "économique"],
     etapes: ["Tartiner le pain de béchamel.", "Garnir de jambon et de gruyère râpé.", "Passer au four ou à la poêle jusqu'à ce que ce soit doré."],
@@ -183,7 +201,7 @@ function buildSeedData() {
   const recipes = SEED_RECIPES.map((r) => ({
     id: uid("rec"),
     titre: r.titre,
-    photo: null,
+    photo: r.photo || null,
     etapes: r.etapes,
     temps_preparation: r.temps_preparation,
     difficulte: r.difficulte,
