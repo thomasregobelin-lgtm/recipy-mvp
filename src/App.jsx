@@ -410,9 +410,12 @@ const STYLE = `
     box-shadow: 0 30px 70px rgba(0,0,0,.45);
     border: 10px solid #0d0a06;
   }
-  @media (max-width: 460px) {
-    .mp-phone-page { padding: 0; background: var(--bg); }
-    .mp-phone-shell { max-width: 100%; height: 100vh; height: 100dvh; border-radius: 0; border: none; box-shadow: none; }
+  @media (max-width: 640px) {
+    .mp-phone-page { padding: 0; background: var(--bg); align-items: stretch; }
+    .mp-phone-shell { max-width: 100%; width: 100%; height: 100vh; height: 100dvh; border-radius: 0; border: none; box-shadow: none; }
+  }
+  @media (max-height: 620px) {
+    .mp-phone-shell { height: 100vh; height: 100dvh; }
   }
 
   .mp-nav {
@@ -466,8 +469,9 @@ const STYLE = `
     min-width: 0;
     min-height: 0;
     order: 1;
-    padding: 16px 16px 18px;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) 18px calc(16px + env(safe-area-inset-left, 0px));
     overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -531,6 +535,13 @@ const STYLE = `
     font-family: 'Fraunces', serif; font-size: 38px; overflow: hidden;
   }
   .mp-swipe-photo img, .mp-rcard-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .mp-mini-thumb {
+    width: 36px; height: 36px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+    border: 2px solid var(--surface); background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center; color: var(--terracotta);
+    font-family: 'Fraunces', serif; font-size: 14px;
+  }
+  .mp-mini-thumb img { width: 100%; height: 100%; object-fit: cover; }
   .mp-swipe-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
   .mp-swipe-title { font-size: 16px; font-weight: 600; margin: 0; }
   .mp-swipe-meta { font-size: 12.5px; color: var(--ink-soft); display: flex; gap: 12px; flex-wrap: wrap; }
@@ -710,9 +721,9 @@ function EmptyState({ icon, title, body }) {
 }
 
 // Vignette recette : affiche la photo si présente, sinon l'initiale sur fond dégradé.
-function RecipeThumb({ recipe, className }) {
+function RecipeThumb({ recipe, className, style }) {
   return (
-    <div className={className}>
+    <div className={className} style={style}>
       {recipe.photo ? <img src={recipe.photo} alt="" onError={(e) => { e.currentTarget.style.display = "none"; }} /> : recipe.titre[0]?.toUpperCase()}
     </div>
   );
@@ -1319,13 +1330,17 @@ function AddShoppingItemModal({ data, onClose, onAdd }) {
   );
 }
 
-function ShoppingScreen({ data, generateShoppingList, toggleShoppingItem, clearShoppingList, addManualShoppingItem, removeShoppingItem }) {
+function ShoppingScreen({ data, generateShoppingList, toggleShoppingItem, clearShoppingList, addManualShoppingItem, removeShoppingItem, goToPlanning }) {
   const [weekStart, setWeekStart] = useState(() => isoDate(mondayOf(todayDate())));
   const [showAddItem, setShowAddItem] = useState(false);
   const weekStartDate = parseISO(weekStart);
   const weekEndDate = addDays(weekStartDate, 6);
-  const weekPlanCount = data.weeklyPlan.filter((p) => { const pd = parseISO(p.date); return pd >= weekStartDate && pd <= weekEndDate; }).length;
+  const weekPlanItemsInRange = data.weeklyPlan.filter((p) => { const pd = parseISO(p.date); return pd >= weekStartDate && pd <= weekEndDate; });
+  const weekPlanCount = weekPlanItemsInRange.length;
+  const weekPlanRecipes = [...new Set(weekPlanItemsInRange.map((p) => p.recipe_id))]
+    .map((id) => data.recipes.find((r) => r.id === id)).filter(Boolean);
   const formatShort = (d) => `${d.getDate()} ${MONTHS_FR[d.getMonth()].slice(0, 3).toLowerCase()}`;
+  const generatedFromPlan = data.shoppingList.some((s) => s.source === "plan");
 
   const checkedCount = data.shoppingList.filter((s) => s.coche).length;
   const total = data.shoppingList.length;
@@ -1348,6 +1363,30 @@ function ShoppingScreen({ data, generateShoppingList, toggleShoppingItem, clearS
         {data.shoppingList.length > 0 && <button className="mp-btn mp-btn-ghost" onClick={clearShoppingList}><Trash2 size={14} /> Vider</button>}
       </div>
       {showAddItem && <AddShoppingItemModal data={data} onClose={() => setShowAddItem(false)} onAdd={addManualShoppingItem} />}
+
+      {generatedFromPlan && weekPlanRecipes.length > 0 && (
+        <div className="mp-card" style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <Sparkles size={13} color="var(--sage-deep)" />
+            <span className="mp-eyebrow">Générée automatiquement</span>
+          </div>
+          <div style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 14 }}>
+            Cette liste combine les ingrédients des <b>{weekPlanRecipes.length} recette{weekPlanRecipes.length !== 1 ? "s" : ""} de votre planning</b> de la semaine.
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+            <div style={{ display: "flex" }}>
+              {weekPlanRecipes.slice(0, 5).map((r, i) => (
+                <RecipeThumb key={r.id} recipe={r} className="mp-mini-thumb" style={{ marginLeft: i > 0 ? -10 : 0, zIndex: 5 - i }} />
+              ))}
+            </div>
+            {goToPlanning && (
+              <button className="mp-btn mp-btn-ghost" style={{ color: "var(--sage-deep)", fontWeight: 700, padding: "4px 2px", flexShrink: 0 }} onClick={goToPlanning}>
+                Gérer le planning <ChevronRight size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {total > 0 && (
         <div className="mp-progress-card" style={{ marginBottom: 18 }}>
@@ -1967,7 +2006,7 @@ export default function MealPlannerApp() {
     discover: { data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, resetDeck, setRecipeModal },
     liked: { data, likedRecipes, likedSelection, setLikedSelection, setRecipeModal, update },
     planning: { data, likedRecipes, addToPlan, removeFromPlan, clearWeek, generateShoppingList, setRecipeModal },
-    shopping: { data, generateShoppingList, toggleShoppingItem, clearShoppingList, addManualShoppingItem, removeShoppingItem },
+    shopping: { data, generateShoppingList, toggleShoppingItem, clearShoppingList, addManualShoppingItem, removeShoppingItem, goToPlanning: () => setScreen("planning") },
     create: { data, update },
     profile: { data, update },
   };
