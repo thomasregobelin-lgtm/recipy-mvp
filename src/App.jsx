@@ -1763,14 +1763,12 @@ function RecipeModal({ recipeModal, data, update, setRecipeModal, deleteRecipe }
   });
   const [ingredientsText, setIngredientsText] = useState(() => ingredientLinesFromRecipe(data, original || form));
   const [etapesText, setEtapesText] = useState(() => (original ? original.etapes : []).join("\n"));
+  const [tempsText, setTempsText] = useState(() => (original?.temps_preparation ? `${original.temps_preparation} min` : ""));
   const [showMoreOptions, setShowMoreOptions] = useState(!!(original && (original.difficulte || original.prix_estime || original.tag_ids?.length)));
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [photoDraft, setPhotoDraft] = useState(form.photo && !form.photo.startsWith("data:") ? form.photo : "");
   const [photoError, setPhotoError] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
   const fileInputRef = useRef(null);
-
-  const applyPhoto = () => { setForm((f) => ({ ...f, photo: photoDraft.trim() || null })); setPhotoError(false); };
 
   // Import d'un fichier local : redimensionné et compressé en JPEG avant stockage,
   // pour rester léger (~quelques dizaines de Ko) — pas de lien externe cassable.
@@ -1791,7 +1789,7 @@ function RecipeModal({ recipeModal, data, update, setRecipeModal, deleteRecipe }
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
         const dataUrl = canvas.toDataURL("image/jpeg", 0.72);
         setForm((f) => ({ ...f, photo: dataUrl }));
-        setPhotoDraft(""); setPhotoError(false); setPhotoBusy(false);
+        setPhotoError(false); setPhotoBusy(false);
       };
       img.onerror = () => setPhotoBusy(false);
       img.src = reader.result;
@@ -1812,7 +1810,8 @@ function RecipeModal({ recipeModal, data, update, setRecipeModal, deleteRecipe }
         return { ingredient_id: ing.id, quantite, unite };
       });
       const etapes = etapesText.split("\n").map((s) => s.trim()).filter(Boolean);
-      const finalRecipe = { ...form, ingredients: resolvedIngredients, etapes };
+      const tempsMatch = tempsText.match(/\d+/);
+      const finalRecipe = { ...form, temps_preparation: tempsMatch ? Number(tempsMatch[0]) : "", ingredients: resolvedIngredients, etapes };
       const idx = d.recipes.findIndex((r) => r.id === finalRecipe.id);
       if (idx >= 0) d.recipes[idx] = finalRecipe; else d.recipes.push(finalRecipe);
       return d;
@@ -1823,8 +1822,10 @@ function RecipeModal({ recipeModal, data, update, setRecipeModal, deleteRecipe }
   return (
     <Modal onClose={() => setRecipeModal(null)}>
       <div className="mp-modal-head">
-        <input className="mp-input mp-serif" style={{ fontSize: 21, border: "none", background: "transparent", padding: "0 0 4px", borderBottom: "1px solid var(--line)", borderRadius: 0 }}
-          placeholder="Titre de la recette *" value={form.titre} onChange={(e) => setForm((f) => ({ ...f, titre: e.target.value }))} />
+        <div>
+          <div className="mp-eyebrow">Modifier la recette</div>
+          <h1 className="mp-serif" style={{ fontSize: 22, margin: 0 }}>Modifier</h1>
+        </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
           <button className="mp-round-btn like" style={{ width: 38, height: 38, background: form.liked ? "var(--sage)" : "var(--surface)", color: form.liked ? "#fff" : "var(--sage-deep)" }}
             onClick={() => setForm((f) => ({ ...f, liked: !f.liked }))} title="Liker"><Heart size={17} fill={form.liked ? "currentColor" : "none"} /></button>
@@ -1833,41 +1834,35 @@ function RecipeModal({ recipeModal, data, update, setRecipeModal, deleteRecipe }
       </div>
 
       <div className="mp-field">
-        <label className="mp-label">Photo</label>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <div style={{
-            width: 64, height: 64, borderRadius: 10, flexShrink: 0, overflow: "hidden",
-            background: "linear-gradient(135deg, var(--sage), var(--terracotta))",
-            display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
-          }}>
-            {form.photo && !photoError
-              ? <img src={form.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setPhotoError(true)} />
-              : <ImageIcon size={22} />}
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", gap: 6 }}>
-              <input className="mp-input" placeholder="URL d'une image (https://…)" value={photoDraft}
-                onChange={(e) => { setPhotoDraft(e.target.value); setPhotoError(false); }} onBlur={applyPhoto} onKeyDown={(e) => e.key === "Enter" && applyPhoto()} />
-              {form.photo && (
-                <button className="mp-btn mp-btn-ghost" onClick={() => { setForm((f) => ({ ...f, photo: null })); setPhotoDraft(""); setPhotoError(false); }}>Retirer</button>
-              )}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
-              <span style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>ou</span>
-              <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileSelect} />
-              <button className="mp-btn mp-btn-ghost" style={{ fontSize: 12.5, padding: "6px 10px" }} onClick={() => fileInputRef.current?.click()} disabled={photoBusy}>
-                {photoBusy ? "Import…" : "Choisir un fichier"}
-              </button>
-            </div>
-          </div>
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileSelect} />
+        <div onClick={() => fileInputRef.current?.click()} style={{
+          border: "1.5px dashed var(--line)", borderRadius: 20, cursor: "pointer",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          padding: (form.photo && !photoError) ? 0 : "30px 16px", overflow: "hidden", minHeight: 130,
+        }}>
+          {form.photo && !photoError ? (
+            <img src={form.photo} alt="" style={{ width: "100%", maxHeight: 180, objectFit: "cover" }} onError={() => setPhotoError(true)} />
+          ) : (
+            <>
+              <ImageIcon size={22} style={{ marginBottom: 8, color: "var(--ink)" }} />
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{photoBusy ? "Import…" : "Ajouter une belle photo"}</div>
+            </>
+          )}
         </div>
-        {photoError && <div style={{ fontSize: 12, color: "var(--danger)", marginTop: 5 }}>Cette image ne charge pas — vérifie le lien, ou importe le fichier directement.</div>}
+        {form.photo && (
+          <button className="mp-btn mp-btn-ghost" style={{ marginTop: 8 }} onClick={() => { setForm((f) => ({ ...f, photo: null })); setPhotoError(false); }}>Retirer la photo</button>
+        )}
+      </div>
+
+      <div className="mp-field">
+        <label className="mp-label">Nom de la recette</label>
+        <input className="mp-input" placeholder="Ex. Curry doré du dimanche" value={form.titre} onChange={(e) => setForm((f) => ({ ...f, titre: e.target.value }))} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
         <div>
-          <label className="mp-label">Temps (min)</label>
-          <input className="mp-input" type="number" value={form.temps_preparation} onChange={(e) => setForm((f) => ({ ...f, temps_preparation: e.target.value }))} />
+          <label className="mp-label">Temps</label>
+          <input className="mp-input" value={tempsText} onChange={(e) => setTempsText(e.target.value)} placeholder="30 min" />
         </div>
         <div>
           <label className="mp-label">Portions</label>
