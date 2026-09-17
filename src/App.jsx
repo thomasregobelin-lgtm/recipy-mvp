@@ -1510,7 +1510,93 @@ function ParametresPanel({ data, update }) {
   );
 }
 
-/* ---------- Modale recette ---------- */
+/* ---------- Détail recette (lecture seule) ---------- */
+
+function RecipeDetailModal({ recipeId, data, onClose, onEdit, toggleLike }) {
+  const r = data.recipes.find((x) => x.id === recipeId);
+  if (!r) return null;
+  const ingredientLines = ingredientLinesFromRecipe(data, r).split("\n").filter(Boolean);
+
+  return (
+    <Modal onClose={onClose}>
+      <div style={{ margin: "-18px -16px 16px", position: "relative" }}>
+        {r.photo ? (
+          <img src={r.photo} alt="" style={{ width: "100%", height: 220, objectFit: "cover", borderRadius: "26px 26px 0 0", display: "block" }} />
+        ) : (
+          <div style={{
+            width: "100%", height: 160, borderRadius: "26px 26px 0 0",
+            background: "linear-gradient(135deg, var(--sage), var(--terracotta))",
+            display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
+            fontFamily: "'Fraunces', serif", fontSize: 44,
+          }}>
+            {r.titre[0]?.toUpperCase()}
+          </div>
+        )}
+        <button className="mp-round-btn" style={{ position: "absolute", top: 12, right: 12, width: 34, height: 34, background: "rgba(255,255,255,.9)" }} onClick={onClose}><X size={16} /></button>
+        <button className="mp-round-btn" style={{ position: "absolute", top: 12, left: 12, width: 34, height: 34, background: r.liked ? "var(--terracotta)" : "rgba(255,255,255,.9)", color: r.liked ? "#fff" : "var(--terracotta)" }}
+          onClick={() => toggleLike(r.id)} aria-label="Liker">
+          <Heart size={15} fill={r.liked ? "currentColor" : "none"} />
+        </button>
+      </div>
+
+      <p className="mp-serif" style={{ fontSize: 22, fontWeight: 600, margin: "0 0 6px" }}>{r.titre}</p>
+      <div className="mp-swipe-meta" style={{ marginBottom: 14 }}>
+        {r.temps_preparation ? <span>{r.temps_preparation} min</span> : null}
+        {r.difficulte ? <span>{r.difficulte}</span> : null}
+        {r.portions ? <span>{r.portions} pers</span> : null}
+        {r.prix_estime ? <span>~{r.prix_estime} €</span> : null}
+      </div>
+
+      {(r.calories || r.proteines || r.lipides) && (
+        <div className="mp-stat-row" style={{ marginBottom: 18 }}>
+          {r.calories ? <div className="mp-stat-pill"><div className="mp-stat-value">{r.calories}</div><div className="mp-stat-label">kcal</div></div> : null}
+          {r.proteines ? <div className="mp-stat-pill"><div className="mp-stat-value">{r.proteines} g</div><div className="mp-stat-label">Protéines</div></div> : null}
+          {r.lipides ? <div className="mp-stat-pill"><div className="mp-stat-value">{r.lipides} g</div><div className="mp-stat-label">Lipides</div></div> : null}
+        </div>
+      )}
+
+      {r.tag_ids.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 }}>
+          {r.tag_ids.map((tid) => <TagPill key={tid}>{tagName(data, tid)}</TagPill>)}
+        </div>
+      )}
+
+      {ingredientLines.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div className="mp-label" style={{ marginBottom: 8 }}>Ingrédients</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            {ingredientLines.map((line, i) => (
+              <div key={i} style={{ display: "flex", gap: 9, fontSize: 14, alignItems: "flex-start" }}>
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--terracotta)", flexShrink: 0, marginTop: 7 }} />
+                <span>{capitalize(line)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {r.etapes?.length > 0 && (
+        <div style={{ marginBottom: 22 }}>
+          <div className="mp-label" style={{ marginBottom: 8 }}>Préparation</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {r.etapes.map((step, i) => (
+              <div key={i} style={{ display: "flex", gap: 10, fontSize: 14, lineHeight: 1.5 }}>
+                <span className="mp-serif" style={{ fontWeight: 600, color: "var(--terracotta)", flexShrink: 0 }}>{i + 1}.</span>
+                <span>{step}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <button className="mp-btn mp-btn-sage" style={{ width: "100%", justifyContent: "center", color: "#fff" }} onClick={() => onEdit(r.id)}>
+        <Pencil size={14} /> Modifier la recette
+      </button>
+    </Modal>
+  );
+}
+
+/* ---------- Modale recette (édition) ---------- */
 
 function RecipeModal({ recipeModal, data, update, setRecipeModal, deleteRecipe }) {
   const isNew = recipeModal === "new";
@@ -1736,7 +1822,8 @@ export default function MealPlannerApp() {
   const [data, setData] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [screen, setScreen] = useState("discover");
-  const [recipeModal, setRecipeModal] = useState(null); // recipe id or "new"
+  const [recipeModal, setRecipeModal] = useState(null); // recipe id showing the read-only detail view
+  const [editRecipeId, setEditRecipeId] = useState(null); // recipe id currently open in the edit form
   const [discoverFilterTags, setDiscoverFilterTags] = useState([]);
   const [useProfileFilter, setUseProfileFilter] = useState(true);
   const [likedSelection, setLikedSelection] = useState([]);
@@ -1913,7 +2000,14 @@ export default function MealPlannerApp() {
               );
             })}
           </nav>
-          {recipeModal && <RecipeModal recipeModal={recipeModal} data={data} update={update} setRecipeModal={setRecipeModal} deleteRecipe={deleteRecipe} />}
+          {recipeModal && !editRecipeId && (
+            <RecipeDetailModal recipeId={recipeModal} data={data} onClose={() => setRecipeModal(null)}
+              onEdit={(id) => setEditRecipeId(id)} toggleLike={toggleLike} />
+          )}
+          {editRecipeId && (
+            <RecipeModal recipeModal={editRecipeId} data={data} update={update}
+              setRecipeModal={() => { setEditRecipeId(null); setRecipeModal(null); }} deleteRecipe={deleteRecipe} />
+          )}
         </div>
       </div>
     </div>
