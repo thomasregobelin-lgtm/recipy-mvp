@@ -706,40 +706,171 @@ function RecipeThumb({ recipe, className }) {
    et les saisies en cours survivent aux mises à jour de données)
 ---------------------------------------------------------------------- */
 
-function CreateScreen({ data, setRecipeModal }) {
-  const myRecipes = data.recipes.filter((r) => r.origine === "utilisateur");
+function CreateScreen({ data, update }) {
+  const emptyForm = { titre: "", photo: null, temps: "30 min", portions: 4, ingredientsText: "", etapesText: "", difficulte: "", prix_estime: "", calories: "", proteines: "", lipides: "", tag_ids: [] };
+  const [form, setForm] = useState(emptyForm);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Import d'un fichier local : redimensionné et compressé en JPEG avant stockage.
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoBusy(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new window.Image();
+      img.onload = () => {
+        const maxDim = 640;
+        let { width, height } = img;
+        if (width > height && width > maxDim) { height = Math.round(height * (maxDim / width)); width = maxDim; }
+        else if (height >= width && height > maxDim) { width = Math.round(width * (maxDim / height)); height = maxDim; }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.72);
+        setForm((f) => ({ ...f, photo: dataUrl }));
+        setPhotoBusy(false);
+      };
+      img.onerror = () => setPhotoBusy(false);
+      img.src = reader.result;
+    };
+    reader.onerror = () => setPhotoBusy(false);
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleSave = () => {
+    if (!form.titre.trim()) return;
+    update((d) => {
+      const resolvedIngredients = parseIngredientsText(form.ingredientsText).map(({ nom, quantite, unite }) => {
+        const ing = getOrCreateIngredientByName(d, nom, unite);
+        return { ingredient_id: ing.id, quantite, unite };
+      });
+      const etapes = form.etapesText.split("\n").map((s) => s.trim()).filter(Boolean);
+      const tempsMatch = form.temps.match(/\d+/);
+      d.recipes.push({
+        id: uid("rec"), titre: form.titre.trim(), photo: form.photo, etapes,
+        temps_preparation: tempsMatch ? Number(tempsMatch[0]) : "", difficulte: form.difficulte,
+        prix_estime: form.prix_estime, portions: form.portions,
+        calories: form.calories, proteines: form.proteines, lipides: form.lipides,
+        origine: "utilisateur", liked: false, ingredients: resolvedIngredients, tag_ids: form.tag_ids,
+      });
+      return d;
+    });
+    setForm(emptyForm);
+    setShowMoreOptions(false);
+  };
+
   return (
     <div>
       <div className="mp-header">
         <div>
-          <div className="mp-eyebrow">{myRecipes.length} recette{myRecipes.length !== 1 ? "s" : ""} créée{myRecipes.length !== 1 ? "s" : ""}</div>
+          <div className="mp-eyebrow">Votre nouvelle recette</div>
           <h1 className="mp-serif mp-title">Créer</h1>
         </div>
-        <button className="mp-btn mp-btn-primary" onClick={() => setRecipeModal("new")}><Plus size={15} /> Nouvelle</button>
-      </div>
-      {myRecipes.length === 0 ? (
-        <EmptyState icon={<Pencil size={32} />} title="Pas encore de création"
-          body='Appuie sur "Nouvelle" pour créer ta première recette. Elle apparaîtra aussi dans le swipe de Découvrir.' />
-      ) : (
-        <div className="mp-grid">
-          {myRecipes.map((r) => (
-            <div key={r.id} className="mp-rcard" onClick={() => setRecipeModal(r.id)}>
-              <RecipeThumb recipe={r} className="mp-rcard-photo" />
-              <div className="mp-rcard-body">
-                <p className="mp-rcard-title">{r.titre}</p>
-                <div className="mp-rcard-meta">
-                  {[r.temps_preparation ? `${r.temps_preparation} min` : null, r.difficulte].filter(Boolean).join(" · ")}
-                </div>
-              </div>
-              {r.liked && (
-                <span title="Likée — utilisable dans le planning" style={{ position: "absolute", top: 8, right: 8, width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Heart size={11} color="var(--sage-deep)" fill="var(--sage-deep)" />
-                </span>
-              )}
-            </div>
-          ))}
+        <div className="mp-round-btn" style={{ width: 38, height: 38, background: "var(--surface-2)", color: "var(--terracotta)", cursor: "default" }} title="Assistant IA (bientôt)">
+          <Sparkles size={17} />
         </div>
+      </div>
+
+      <div className="mp-field">
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileSelect} />
+        <div onClick={() => fileInputRef.current?.click()} style={{
+          border: "1.5px dashed var(--line)", borderRadius: 20, cursor: "pointer",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          padding: form.photo ? 0 : "38px 16px", overflow: "hidden", minHeight: 150,
+        }}>
+          {form.photo ? (
+            <img src={form.photo} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover" }} />
+          ) : (
+            <>
+              <ImageIcon size={22} style={{ marginBottom: 8, color: "var(--ink)" }} />
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{photoBusy ? "Import…" : "Ajouter une belle photo"}</div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="mp-field">
+        <label className="mp-label">Nom de la recette</label>
+        <input className="mp-input" placeholder="Ex. Curry doré du dimanche" value={form.titre} onChange={(e) => setForm((f) => ({ ...f, titre: e.target.value }))} />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+        <div>
+          <label className="mp-label">Temps</label>
+          <input className="mp-input" value={form.temps} onChange={(e) => setForm((f) => ({ ...f, temps: e.target.value }))} />
+        </div>
+        <div>
+          <label className="mp-label">Portions</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, height: 37 }}>
+            <button className="mp-round-btn" style={{ width: 30, height: 30 }} onClick={() => setForm((f) => ({ ...f, portions: Math.max(1, f.portions - 1) }))}><Minus size={13} /></button>
+            <span className="mp-serif" style={{ fontSize: 16, fontWeight: 600, minWidth: 16, textAlign: "center" }}>{form.portions}</span>
+            <button className="mp-round-btn" style={{ width: 30, height: 30 }} onClick={() => setForm((f) => ({ ...f, portions: f.portions + 1 }))}><Plus size={13} /></button>
+          </div>
+        </div>
+      </div>
+
+      <div className="mp-field">
+        <label className="mp-label">Ingrédients</label>
+        <textarea className="mp-textarea" rows={4} placeholder={"2 tomates\n1 citron\nUne poignée d'herbes"}
+          value={form.ingredientsText} onChange={(e) => setForm((f) => ({ ...f, ingredientsText: e.target.value }))} />
+      </div>
+
+      <div className="mp-field">
+        <label className="mp-label">Préparation</label>
+        <textarea className="mp-textarea" rows={5} placeholder="Décrivez les étapes simplement…"
+          value={form.etapesText} onChange={(e) => setForm((f) => ({ ...f, etapesText: e.target.value }))} />
+      </div>
+
+      <button className="mp-btn mp-btn-ghost" style={{ marginBottom: 14 }} onClick={() => setShowMoreOptions((s) => !s)}>
+        {showMoreOptions ? "Moins d'options" : "Plus d'options"}
+      </button>
+
+      {showMoreOptions && (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+            <div>
+              <label className="mp-label">Difficulté</label>
+              <select className="mp-select" value={form.difficulte} onChange={(e) => setForm((f) => ({ ...f, difficulte: e.target.value }))}>
+                <option value="">—</option>
+                {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="mp-label">Prix estimé (€)</label>
+              <input className="mp-input" type="number" value={form.prix_estime} onChange={(e) => setForm((f) => ({ ...f, prix_estime: e.target.value }))} />
+            </div>
+          </div>
+
+          <div className="mp-field">
+            <label className="mp-label">Valeurs nutritionnelles (par portion, optionnel)</label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              <input className="mp-input" type="number" placeholder="kcal" value={form.calories} onChange={(e) => setForm((f) => ({ ...f, calories: e.target.value }))} />
+              <input className="mp-input" type="number" placeholder="Protéines (g)" value={form.proteines} onChange={(e) => setForm((f) => ({ ...f, proteines: e.target.value }))} />
+              <input className="mp-input" type="number" placeholder="Lipides (g)" value={form.lipides} onChange={(e) => setForm((f) => ({ ...f, lipides: e.target.value }))} />
+            </div>
+          </div>
+
+          <div className="mp-field">
+            <label className="mp-label">Tags</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {data.tags.map((t) => (
+                <TagPill key={t.id} selected={form.tag_ids.includes(t.id)}
+                  onClick={() => setForm((f) => ({ ...f, tag_ids: f.tag_ids.includes(t.id) ? f.tag_ids.filter((x) => x !== t.id) : [...f.tag_ids, t.id] }))}>
+                  {t.nom}
+                </TagPill>
+              ))}
+            </div>
+          </div>
+        </>
       )}
+
+      <button className="mp-btn mp-btn-sage" style={{ width: "100%", justifyContent: "center", color: "#fff" }} onClick={handleSave} disabled={!form.titre.trim()}>
+        <Sparkles size={15} /> Enregistrer la recette
+      </button>
     </div>
   );
 }
@@ -1732,7 +1863,7 @@ export default function MealPlannerApp() {
     liked: { data, likedRecipes, likedSelection, setLikedSelection, setRecipeModal, update },
     planning: { data, likedRecipes, addToPlan, removeFromPlan, clearWeek, generateShoppingList, setRecipeModal },
     shopping: { data, generateShoppingList, toggleShoppingItem, clearShoppingList, addManualShoppingItem, removeShoppingItem },
-    create: { data, setRecipeModal },
+    create: { data, update },
     profile: { data, update },
   };
 
