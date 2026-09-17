@@ -468,7 +468,7 @@ const STYLE = `
   }
   .mp-nav-brand { display: none; }
   .mp-topbar {
-    display: flex; justify-content: flex-end; margin-bottom: 8px;
+    display: flex; justify-content: flex-end; margin-bottom: 8px; flex-shrink: 0;
   }
   .mp-profile-active {
     background: var(--terracotta); border-color: var(--terracotta); color: #fff;
@@ -511,7 +511,10 @@ const STYLE = `
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
   }
+  .mp-discover-fill { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 
   .mp-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
   .mp-title { font-size: 22px; font-weight: 500; margin: 0; }
@@ -559,8 +562,8 @@ const STYLE = `
   }
 
   /* Swipe deck */
-  .mp-deck-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 0; }
-  .mp-deck { position: relative; width: 100%; max-width: 320px; height: min(54dvh, 440px); }
+  .mp-deck-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; padding-top: 0; flex: 1; min-height: 0; }
+  .mp-deck { position: relative; width: 100%; max-width: 320px; flex: 1; min-height: 190px; max-height: 420px; }
   .mp-swipe-card {
     position: absolute; inset: 0; border-radius: 32px; background: var(--surface);
     border: none; display: flex; flex-direction: column; overflow: hidden;
@@ -580,9 +583,18 @@ const STYLE = `
     font-family: 'Fraunces', serif; font-size: 14px;
   }
   .mp-mini-thumb img { width: 100%; height: 100%; object-fit: cover; }
-  .mp-swipe-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .mp-swipe-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; overflow: hidden; }
   .mp-swipe-title { font-size: 16px; font-weight: 600; margin: 0; }
+  .mp-swipe-desc { font-size: 12.5px; color: var(--ink-soft); line-height: 1.35; margin: 1px 0 0; }
   .mp-swipe-meta { font-size: 12.5px; color: var(--ink-soft); display: flex; gap: 12px; flex-wrap: wrap; }
+  @media (max-height: 700px) {
+    .mp-swipe-photo-wrap { height: 36%; }
+    .mp-swipe-body { padding: 10px 16px; gap: 4px; }
+    .mp-swipe-desc { display: none; }
+    .mp-stat-pill { padding: 6px 6px; }
+    .mp-stat-pill .mp-stat-value { font-size: 15px; }
+    .mp-deck { min-height: 150px; }
+  }
   .mp-swipe-stamp {
     position: absolute; top: 26px; padding: 6px 14px; border: 3px solid; border-radius: 8px;
     font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600; transform: rotate(-14deg);
@@ -969,8 +981,8 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
   };
 
   return (
-    <div>
-      <div className="mp-header">
+    <div className="mp-discover-fill">
+      <div className="mp-header" style={{ marginBottom: 8, flexShrink: 0 }}>
         <div>
           <div className="mp-eyebrow">{data.recipes.length} recettes à découvrir</div>
           <h1 className="mp-serif mp-title">Swipe</h1>
@@ -985,7 +997,7 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
       </div>
 
       {!useProfileFilter && (
-        <div className="mp-scroll-x" style={{ marginBottom: 20 }}>
+        <div className="mp-scroll-x" style={{ marginBottom: 8, flexShrink: 0 }}>
           {data.tags.map((t) => (
             <TagPill key={t.id} selected={discoverFilterTags.includes(t.id)}
               onClick={() => setDiscoverFilterTags((prev) => prev.includes(t.id) ? prev.filter((x) => x !== t.id) : [...prev, t.id])}>
@@ -1028,7 +1040,7 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
                     <span style={{ fontSize: 11, color: "var(--ink-faint)" }}>N° {data.recipes.findIndex((x) => x.id === r.id) + 1}</span>
                   </div>
                   <p className="mp-serif mp-swipe-title">{r.titre}</p>
-                  {r.description && <p style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.35, margin: "1px 0 0" }}>{r.description}</p>}
+                  {r.description && <p className="mp-swipe-desc">{r.description}</p>}
                   <div className="mp-swipe-meta">
                     {r.temps_preparation ? <span>{r.temps_preparation} min</span> : null}
                     {r.difficulte ? <span>{capitalize(r.difficulte)}</span> : null}
@@ -1052,7 +1064,7 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
         </div>
 
         {top && (
-          <div className="mp-deck-actions">
+          <div className="mp-deck-actions" style={{ flexShrink: 0 }}>
             <button className="mp-round-btn pass" onClick={() => resolveSwipe("pass")} aria-label="Passer"><X size={20} /></button>
             <button className="mp-round-btn info" style={{ width: 58, height: 58 }} onClick={() => resolveSwipe("like")} aria-label="Garder"><Check size={24} /></button>
             <button className="mp-round-btn like" onClick={() => resolveSwipe("like")} aria-label="J'aime"><Heart size={20} fill="currentColor" /></button>
@@ -1060,16 +1072,16 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
         )}
       </div>
 
-      <div className="mp-card" style={{ marginTop: 18, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <div className="mp-card" style={{ marginTop: 12, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: 12 }}>
         <div>
-          <div className="mp-serif" style={{ fontSize: 15, fontWeight: 600 }}>À votre sauce</div>
-          <div style={{ fontSize: 12, color: "var(--ink-soft)" }}>Portions, ingrédients, allergies…</div>
+          <div className="mp-serif" style={{ fontSize: 14, fontWeight: 600 }}>À votre sauce</div>
+          <div style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>Portions, ingrédients, allergies…</div>
         </div>
         {goToProfile && (
-          <button className="mp-btn mp-btn-primary" style={{ flexShrink: 0 }} onClick={goToProfile}><Pencil size={13} /> Modifier</button>
+          <button className="mp-btn mp-btn-primary" style={{ flexShrink: 0, padding: "7px 13px" }} onClick={goToProfile}><Pencil size={12} /> Modifier</button>
         )}
       </div>
-      <button className="mp-btn mp-btn-ghost" style={{ display: "flex", margin: "10px auto 0" }} onClick={resetDeck}>
+      <button className="mp-btn mp-btn-ghost" style={{ display: "flex", flexShrink: 0, margin: "6px auto 0" }} onClick={resetDeck}>
         <RotateCcw size={13} /> Recommencer la sélection
       </button>
     </div>
@@ -1224,6 +1236,7 @@ const MOMENT_LABEL = { midi: "Déjeuner", soir: "Dîner" };
 function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, clearWeek, generateShoppingList, setRecipeModal }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [picker, setPicker] = useState(null); // { dateISO, dayIdx, moment } | null
+  const [viewMode, setViewMode] = useState("jour"); // "jour" | "semaine"
 
   const monday = mondayOf(addDays(todayDate(), weekOffset * 7));
   const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
@@ -1261,47 +1274,92 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, clearWe
         </div>
       </div>
 
-      <div className="mp-day-strip" style={{ marginBottom: 18 }}>
-        {weekDates.map((d, i) => {
-          const iso = isoDate(d);
-          return (
-            <div key={iso} className={`mp-day-chip ${iso === selectedISO ? "selected" : ""}`} onClick={() => setSelectedISO(iso)}>
-              <span className="mp-day-num">{d.getDate()}</span>
-              <span className="mp-day-name">{DOW_SHORT[i]}</span>
-            </div>
-          );
-        })}
+      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+        <TagPill tone="sage" selected={viewMode === "jour"} onClick={() => setViewMode("jour")}>Jour</TagPill>
+        <TagPill tone="sage" selected={viewMode === "semaine"} onClick={() => setViewMode("semaine")}>Semaine</TagPill>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-        <h2 className="mp-serif" style={{ fontSize: 19, margin: 0, textTransform: "capitalize" }}>
-          {selectedDayName} {selectedDayNum}{selectedISO === todayISO ? " · Aujourd'hui" : ""}
-        </h2>
-        <span className="mp-sub" style={{ margin: 0 }}>{selectedFilledCount} repas</span>
-      </div>
+      {viewMode === "jour" ? (
+        <>
+          <div className="mp-day-strip" style={{ marginBottom: 18 }}>
+            {weekDates.map((d, i) => {
+              const iso = isoDate(d);
+              return (
+                <div key={iso} className={`mp-day-chip ${iso === selectedISO ? "selected" : ""}`} onClick={() => setSelectedISO(iso)}>
+                  <span className="mp-day-num">{d.getDate()}</span>
+                  <span className="mp-day-name">{DOW_SHORT[i]}</span>
+                </div>
+              );
+            })}
+          </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
-        {selectedSlots.map(({ moment, slot }) => {
-          const recipe = slot ? data.recipes.find((r) => r.id === slot.recipe_id) : null;
-          return recipe ? (
-            <div key={moment} className="mp-meal-card" onClick={() => setRecipeModal(recipe.id)}>
-              <RecipeThumb recipe={recipe} className="mp-meal-thumb" />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="mp-eyebrow" style={{ fontSize: 10 }}>{MOMENT_LABEL[moment].toUpperCase()} · {MOMENT_TIME[moment]}</div>
-                <div className="mp-serif" style={{ fontSize: 15, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{recipe.titre}</div>
-                <div style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>
-                  {[recipe.temps_preparation ? `${recipe.temps_preparation} min` : null, recipe.portions ? `${recipe.portions} pers` : null].filter(Boolean).join(" · ")}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+            <h2 className="mp-serif" style={{ fontSize: 19, margin: 0, textTransform: "capitalize" }}>
+              {selectedDayName} {selectedDayNum}{selectedISO === todayISO ? " · Aujourd'hui" : ""}
+            </h2>
+            <span className="mp-sub" style={{ margin: 0 }}>{selectedFilledCount} repas</span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
+            {selectedSlots.map(({ moment, slot }) => {
+              const recipe = slot ? data.recipes.find((r) => r.id === slot.recipe_id) : null;
+              return recipe ? (
+                <div key={moment} className="mp-meal-card" onClick={() => setRecipeModal(recipe.id)}>
+                  <RecipeThumb recipe={recipe} className="mp-meal-thumb" />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="mp-eyebrow" style={{ fontSize: 10 }}>{MOMENT_LABEL[moment].toUpperCase()} · {MOMENT_TIME[moment]}</div>
+                    <div className="mp-serif" style={{ fontSize: 15, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{recipe.titre}</div>
+                    <div style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>
+                      {[recipe.temps_preparation ? `${recipe.temps_preparation} min` : null, recipe.portions ? `${recipe.portions} pers` : null].filter(Boolean).join(" · ")}
+                    </div>
+                  </div>
+                  <Trash2 size={15} style={{ cursor: "pointer", flexShrink: 0, color: "var(--ink-faint)" }} onClick={(e) => { e.stopPropagation(); removeFromPlan(slot.id); }} />
+                </div>
+              ) : (
+                <div key={moment} className="mp-meal-slot-empty" onClick={() => setPicker({ dateISO: selectedISO, dayIdx: selectedIdx, moment })}>
+                  <Plus size={15} /> Ajouter un repas du {moment === "midi" ? "midi" : "soir"}…
+                </div>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 18 }}>
+          {weekDates.map((d, i) => {
+            const iso = isoDate(d);
+            const daySlots = ["midi", "soir"].map((moment) => ({ moment, slot: findSlot(iso, moment) }));
+            const isToday = iso === todayISO;
+            return (
+              <div key={iso}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
+                  <span className="mp-serif" style={{ fontSize: 15, fontWeight: 600, textTransform: "capitalize" }}>{DOW_LONG[i]} {d.getDate()}</span>
+                  {isToday && <span className="mp-eyebrow coral" style={{ fontSize: 10 }}>Aujourd'hui</span>}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {daySlots.map(({ moment, slot }) => {
+                    const recipe = slot ? data.recipes.find((r) => r.id === slot.recipe_id) : null;
+                    return recipe ? (
+                      <div key={moment} className="mp-meal-card" style={{ padding: 8 }} onClick={() => setRecipeModal(recipe.id)}>
+                        <RecipeThumb recipe={recipe} className="mp-meal-thumb" style={{ width: 42, height: 42 }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="mp-eyebrow" style={{ fontSize: 9.5 }}>{MOMENT_LABEL[moment].toUpperCase()}</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{recipe.titre}</div>
+                        </div>
+                        <Trash2 size={13} style={{ cursor: "pointer", flexShrink: 0, color: "var(--ink-faint)" }} onClick={(e) => { e.stopPropagation(); removeFromPlan(slot.id); }} />
+                      </div>
+                    ) : (
+                      <div key={moment} className="mp-meal-slot-empty" style={{ padding: 9, fontSize: 12.5 }}
+                        onClick={() => setPicker({ dateISO: iso, dayIdx: i, moment })}>
+                        <Plus size={13} /> {MOMENT_LABEL[moment]}…
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-              <Trash2 size={15} style={{ cursor: "pointer", flexShrink: 0, color: "var(--ink-faint)" }} onClick={(e) => { e.stopPropagation(); removeFromPlan(slot.id); }} />
-            </div>
-          ) : (
-            <div key={moment} className="mp-meal-slot-empty" onClick={() => setPicker({ dateISO: selectedISO, dayIdx: selectedIdx, moment })}>
-              <Plus size={15} /> Ajouter un repas du {moment === "midi" ? "midi" : "soir"}…
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       <button className="mp-btn mp-btn-primary" style={{ width: "100%", justifyContent: "center", marginBottom: 16 }}
         onClick={() => generateShoppingList(weekDatesISO[0])} disabled={weekPlanCount === 0}>
