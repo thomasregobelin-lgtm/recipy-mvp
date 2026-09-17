@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Heart, X, ChevronLeft, ChevronRight, Plus, Trash2, Check,
+  Heart, X, Info, ChevronLeft, ChevronRight, Plus, Trash2, Check,
   Pencil, ShoppingCart, CalendarDays, BookOpen, Sparkles, User,
   Search, ArrowLeft, RotateCcw, Minus, Image as ImageIcon, Menu, Utensils,
   SlidersHorizontal
@@ -1066,7 +1066,7 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
         {top && (
           <div className="mp-deck-actions" style={{ flexShrink: 0 }}>
             <button className="mp-round-btn pass" onClick={() => resolveSwipe("pass")} aria-label="Passer"><X size={20} /></button>
-            <button className="mp-round-btn info" style={{ width: 58, height: 58 }} onClick={() => resolveSwipe("like")} aria-label="Garder"><Check size={24} /></button>
+            <button className="mp-round-btn info" style={{ width: 58, height: 58 }} onClick={() => setRecipeModal(top.id)} aria-label="Plus d'informations"><Info size={22} /></button>
             <button className="mp-round-btn like" onClick={() => resolveSwipe("like")} aria-label="J'aime"><Heart size={20} fill="currentColor" /></button>
           </div>
         )}
