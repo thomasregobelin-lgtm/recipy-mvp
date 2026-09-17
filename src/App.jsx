@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Heart, X, Info, ChevronLeft, ChevronRight, Plus, Trash2, Check,
   Pencil, ShoppingCart, CalendarDays, BookOpen, Sparkles, User,
-  Search, ArrowLeft, RotateCcw, Minus, Image as ImageIcon, Menu, Utensils
+  Search, ArrowLeft, RotateCcw, Minus, Image as ImageIcon, Menu, Utensils,
+  SlidersHorizontal
 } from "lucide-react";
 
 /* ----------------------------------------------------------------------
@@ -491,6 +492,7 @@ const STYLE = `
   }
   .mp-tag.clickable { cursor: pointer; }
   .mp-tag.selected { background: var(--terracotta); border-color: var(--terracotta); color: #fff; }
+  .mp-tag.selected.tone-sage { background: var(--sage); border-color: var(--sage); color: #fff; }
 
   .mp-card {
     background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 16px;
@@ -600,12 +602,12 @@ const STYLE = `
   .mp-empty { text-align: center; color: var(--ink-soft); padding: 50px 20px; max-width: 380px; }
 
   /* Recipe grid */
-  .mp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+  .mp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .mp-rcard {
     background: var(--surface); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; cursor: pointer; position: relative;
   }
   .mp-rcard-photo {
-    height: 100px; background: var(--surface-2);
+    aspect-ratio: 1 / 1; background: var(--surface-2);
     display: flex; align-items: center; justify-content: center; color: var(--terracotta);
     font-family: 'Fraunces', serif; font-size: 30px; position: relative; overflow: hidden;
   }
@@ -661,9 +663,9 @@ const STYLE = `
    Petits composants
 ---------------------------------------------------------------------- */
 
-function TagPill({ children, selected, onClick, small }) {
+function TagPill({ children, selected, onClick, small, tone }) {
   return (
-    <span className={`mp-tag ${onClick ? "clickable" : ""} ${selected ? "selected" : ""}`} onClick={onClick} style={small ? { fontSize: 11, padding: "3px 8px" } : undefined}>
+    <span className={`mp-tag ${onClick ? "clickable" : ""} ${selected ? "selected" : ""} ${tone ? `tone-${tone}` : ""}`} onClick={onClick} style={small ? { fontSize: 11, padding: "3px 8px" } : undefined}>
       {children}
     </span>
   );
@@ -863,7 +865,10 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
 function LikedScreen({ data, likedRecipes, likedSelection, setLikedSelection, setRecipeModal, update }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("toutes"); // "toutes" | "express" | "vege"
+  const [selectMode, setSelectMode] = useState(false);
   const vegeTag = data.tags.find((t) => normalizeName(t.nom).includes("vég"));
+  const todayISO = isoDate(todayDate());
+  const tonightRecipeIds = new Set(data.weeklyPlan.filter((p) => p.date === todayISO && p.moment === "soir").map((p) => p.recipe_id));
 
   const allSelected = likedRecipes.length > 0 && likedSelection.length === likedRecipes.length;
   const toggleSelect = (id) => setLikedSelection((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
@@ -872,6 +877,7 @@ function LikedScreen({ data, likedRecipes, likedSelection, setLikedSelection, se
     update((d) => { d.recipes.forEach((r) => { if (likedSelection.includes(r.id)) r.liked = false; }); return d; });
     setLikedSelection([]);
   };
+  const closeSelectMode = () => { setSelectMode(false); setLikedSelection([]); };
 
   const q = normalizeName(query);
   const visible = likedRecipes.filter((r) => {
@@ -888,11 +894,21 @@ function LikedScreen({ data, likedRecipes, likedSelection, setLikedSelection, se
           <div className="mp-eyebrow">{likedRecipes.length} recette{likedRecipes.length !== 1 ? "s" : ""} gardée{likedRecipes.length !== 1 ? "s" : ""}</div>
           <h1 className="mp-serif mp-title">Mes likes</h1>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          {likedRecipes.length > 0 && <button className="mp-btn mp-btn-ghost" onClick={toggleAll}>{allSelected ? "Tout désélectionner" : "Tout sélectionner"}</button>}
+        {likedRecipes.length > 0 && (
+          selectMode ? (
+            <button className="mp-round-btn" style={{ width: 34, height: 34 }} onClick={closeSelectMode} aria-label="Fermer la sélection"><X size={15} /></button>
+          ) : (
+            <button className="mp-round-btn" style={{ width: 34, height: 34 }} onClick={() => setSelectMode(true)} aria-label="Sélectionner"><SlidersHorizontal size={15} /></button>
+          )
+        )}
+      </div>
+
+      {selectMode && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          <button className="mp-btn mp-btn-ghost" onClick={toggleAll}>{allSelected ? "Tout désélectionner" : "Tout sélectionner"}</button>
           {likedSelection.length > 0 && <button className="mp-btn mp-btn-danger" onClick={bulkRemove}><Trash2 size={14} /> Retirer ({likedSelection.length})</button>}
         </div>
-      </div>
+      )}
 
       {likedRecipes.length > 0 && (
         <>
@@ -901,9 +917,9 @@ function LikedScreen({ data, likedRecipes, likedSelection, setLikedSelection, se
             <input className="mp-input" style={{ paddingLeft: 34, borderRadius: 24 }} placeholder="Chercher une recette" value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
           <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
-            <TagPill selected={filter === "toutes"} onClick={() => setFilter("toutes")}>Toutes</TagPill>
-            <TagPill selected={filter === "express"} onClick={() => setFilter("express")}>Express</TagPill>
-            {vegeTag && <TagPill selected={filter === "vege"} onClick={() => setFilter("vege")}>Végé</TagPill>}
+            <TagPill tone="sage" selected={filter === "toutes"} onClick={() => setFilter("toutes")}>Toutes</TagPill>
+            <TagPill tone="sage" selected={filter === "express"} onClick={() => setFilter("express")}>Express</TagPill>
+            {vegeTag && <TagPill tone="sage" selected={filter === "vege"} onClick={() => setFilter("vege")}>Végé</TagPill>}
           </div>
         </>
       )}
@@ -914,25 +930,33 @@ function LikedScreen({ data, likedRecipes, likedSelection, setLikedSelection, se
         <EmptyState icon={<Search size={32} />} title="Aucun résultat" body="Aucune recette likée ne correspond à cette recherche ou à ce filtre." />
       ) : (
         <div className="mp-grid">
-          {visible.map((r) => (
-            <div key={r.id} className="mp-rcard" onClick={() => setRecipeModal(r.id)}>
-              <div style={{ position: "relative" }}>
-                <RecipeThumb recipe={r} className="mp-rcard-photo" />
-                <span className="mp-photo-like" style={{ top: 8, right: 8, width: 28, height: 28 }}><Heart size={13} fill="currentColor" /></span>
-              </div>
-              <div className="mp-rcard-body">
-                <p className="mp-rcard-title">{r.titre}</p>
-                <div className="mp-rcard-meta">
-                  {[r.temps_preparation ? `${r.temps_preparation} min` : null, r.calories ? `${r.calories} kcal` : null, r.difficulte].filter(Boolean).join(" · ")}
+          {visible.map((r) => {
+            const eyebrow = tonightRecipeIds.has(r.id) ? "Ce soir ?" : (r.tag_ids[0] ? tagName(data, r.tag_ids[0]) : null);
+            return (
+              <div key={r.id} className="mp-rcard" onClick={() => (selectMode ? toggleSelect(r.id) : setRecipeModal(r.id))}>
+                <div style={{ position: "relative" }}>
+                  <RecipeThumb recipe={r} className="mp-rcard-photo" />
+                  <span className="mp-photo-like" style={{ top: 8, right: 8, width: 28, height: 28 }}><Heart size={13} fill="currentColor" /></span>
                 </div>
+                <div className="mp-rcard-body">
+                  {eyebrow && (
+                    <div className={`mp-eyebrow ${tonightRecipeIds.has(r.id) ? "coral" : ""}`} style={{ marginBottom: 3 }}>{eyebrow}</div>
+                  )}
+                  <p className="mp-rcard-title">{r.titre}</p>
+                  <div className="mp-rcard-meta">
+                    {[r.temps_preparation ? `${r.temps_preparation} min` : null, r.calories ? `${r.calories} kcal` : null, r.difficulte].filter(Boolean).join(" · ")}
+                  </div>
+                </div>
+                {selectMode && (
+                  <div className={`mp-checkbox-overlay ${likedSelection.includes(r.id) ? "checked" : ""}`}
+                    style={{ position: "absolute", top: 8, left: 8 }}
+                    onClick={(e) => { e.stopPropagation(); toggleSelect(r.id); }}>
+                    {likedSelection.includes(r.id) && <Check size={14} />}
+                  </div>
+                )}
               </div>
-              <div className={`mp-checkbox-overlay ${likedSelection.includes(r.id) ? "checked" : ""}`}
-                style={{ position: "absolute", top: 8, left: 8 }}
-                onClick={(e) => { e.stopPropagation(); toggleSelect(r.id); }}>
-                {likedSelection.includes(r.id) && <Check size={14} />}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
