@@ -3,7 +3,7 @@ import {
   Heart, X, Info, ChevronLeft, ChevronRight, Plus, Trash2, Check,
   Pencil, ShoppingCart, CalendarDays, BookOpen, Sparkles, User,
   Search, ArrowLeft, RotateCcw, Minus, Image as ImageIcon, Menu, Utensils,
-  SlidersHorizontal
+  SlidersHorizontal, Download, Upload
 } from "lucide-react";
 
 /* ----------------------------------------------------------------------
@@ -514,7 +514,13 @@ const STYLE = `
     display: flex;
     flex-direction: column;
   }
-  .mp-discover-fill { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .mp-discover-fill { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; position: relative; }
+  .mp-undo-toast {
+    position: absolute; left: 16px; right: 16px; bottom: 8px; z-index: 20;
+    background: var(--ink); color: #fff; border-radius: 14px; padding: 10px 8px 10px 16px;
+    display: flex; align-items: center; justify-content: space-between; font-size: 13px;
+    box-shadow: 0 8px 20px rgba(0,0,0,.25);
+  }
 
   .mp-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
   .mp-title { font-size: 22px; font-weight: 500; margin: 0; }
@@ -751,6 +757,12 @@ function TagPill({ children, selected, onClick, small, tone }) {
 }
 
 function Modal({ onClose, children, width }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
     <div className="mp-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="mp-modal" style={width ? { maxWidth: width } : undefined}>
@@ -954,10 +966,17 @@ function CreateScreen({ data, update }) {
   );
 }
 
-function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, resetDeck, setRecipeModal, goToProfile }) {
+function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, unmarkSeen, resetDeck, setRecipeModal, goToProfile }) {
   const top = deckRecipes[0];
   const [drag, setDrag] = useState({ x: 0, active: false });
+  const [lastPassedId, setLastPassedId] = useState(null);
   const startX = useRef(0);
+
+  useEffect(() => {
+    if (!lastPassedId) return;
+    const t = setTimeout(() => setLastPassedId(null), 4000);
+    return () => clearTimeout(t);
+  }, [lastPassedId]);
 
   const onDown = (e) => {
     startX.current = (e.touches ? e.touches[0].clientX : e.clientX);
@@ -970,8 +989,14 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
   };
   const resolveSwipe = (dir) => {
     if (!top) return;
-    if (dir === "like") toggleLike(top.id); else markSeen(top.id);
+    if (dir === "like") toggleLike(top.id);
+    else { markSeen(top.id); setLastPassedId(top.id); }
     setDrag({ x: 0, active: false });
+  };
+  const undoPass = () => {
+    if (!lastPassedId) return;
+    unmarkSeen(lastPassedId);
+    setLastPassedId(null);
   };
   const onUp = () => {
     if (!drag.active) return;
@@ -1047,10 +1072,13 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
                     {r.portions ? <span>{r.portions} pers</span> : null}
                   </div>
                   {(r.calories || r.proteines || r.lipides) ? (
-                    <div className="mp-stat-row" style={{ marginTop: 2 }}>
-                      {r.calories ? <div className="mp-stat-pill"><div className="mp-stat-value">{r.calories}</div><div className="mp-stat-label">kcal</div></div> : null}
-                      {r.proteines ? <div className="mp-stat-pill"><div className="mp-stat-value">{r.proteines} g</div><div className="mp-stat-label">Protéines</div></div> : null}
-                      {r.lipides ? <div className="mp-stat-pill"><div className="mp-stat-value">{r.lipides} g</div><div className="mp-stat-label">Lipides</div></div> : null}
+                    <div style={{ marginTop: 2 }}>
+                      <div className="mp-swipe-desc" style={{ fontSize: 9.5, marginBottom: 3 }}>Valeurs pour 1 portion</div>
+                      <div className="mp-stat-row">
+                        {r.calories ? <div className="mp-stat-pill"><div className="mp-stat-value">{r.calories}</div><div className="mp-stat-label">kcal</div></div> : null}
+                        {r.proteines ? <div className="mp-stat-pill"><div className="mp-stat-value">{r.proteines} g</div><div className="mp-stat-label">Protéines</div></div> : null}
+                        {r.lipides ? <div className="mp-stat-pill"><div className="mp-stat-value">{r.lipides} g</div><div className="mp-stat-label">Lipides</div></div> : null}
+                      </div>
                     </div>
                   ) : (
                     <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 2 }}>
@@ -1084,6 +1112,15 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
       <button className="mp-btn mp-btn-ghost" style={{ display: "flex", flexShrink: 0, margin: "6px auto 0" }} onClick={resetDeck}>
         <RotateCcw size={13} /> Recommencer la sélection
       </button>
+
+      {lastPassedId && (
+        <div className="mp-undo-toast">
+          <span>Recette passée</span>
+          <button onClick={undoPass} style={{ background: "none", border: "none", color: "var(--gold)", fontWeight: 700, cursor: "pointer", fontSize: 13, padding: "6px 8px" }}>
+            Annuler
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1151,9 +1188,17 @@ function LikedScreen({ data, likedRecipes, likedSelection, setLikedSelection, se
       )}
 
       {likedRecipes.length === 0 ? (
-        <EmptyState icon={<Heart size={32} />} title="Aucune recette likée" body="Va faire un tour dans Swipe pour liker des recettes, qu'elles viennent du catalogue ou que tu les aies créées toi-même." />
+        <div className="mp-card" style={{ textAlign: "center", padding: "34px 20px", color: "var(--ink-soft)" }}>
+          <Heart size={26} style={{ opacity: 0.4, marginBottom: 10 }} />
+          <div className="mp-serif" style={{ fontSize: 16, color: "var(--ink)", marginBottom: 4 }}>Aucune recette likée</div>
+          <div style={{ fontSize: 13, lineHeight: 1.5 }}>Va faire un tour dans Swipe pour liker des recettes, qu'elles viennent du catalogue ou que tu les aies créées toi-même.</div>
+        </div>
       ) : visible.length === 0 ? (
-        <EmptyState icon={<Search size={32} />} title="Aucun résultat" body="Aucune recette likée ne correspond à cette recherche ou à ce filtre." />
+        <div className="mp-card" style={{ textAlign: "center", padding: "34px 20px", color: "var(--ink-soft)" }}>
+          <Search size={26} style={{ opacity: 0.4, marginBottom: 10 }} />
+          <div className="mp-serif" style={{ fontSize: 16, color: "var(--ink)", marginBottom: 4 }}>Aucun résultat</div>
+          <div style={{ fontSize: 13, lineHeight: 1.5 }}>Aucune recette likée ne correspond à cette recherche ou à ce filtre.</div>
+        </div>
       ) : (
         <div className="mp-grid">
           {visible.map((r) => {
@@ -1642,25 +1687,80 @@ function ProfileScreen({ data, update }) {
 
 function ParametresPanel({ data, update }) {
   const [confirmReset, setConfirmReset] = useState(false);
+  const [importError, setImportError] = useState("");
+  const [importDone, setImportDone] = useState(false);
+  const importInputRef = useRef(null);
+
   const doReset = () => {
     update(() => buildSeedData());
     setConfirmReset(false);
   };
+
+  const handleExport = () => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `recipy-sauvegarde-${isoDate(todayDate())}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        if (!parsed || !Array.isArray(parsed.recipes) || !Array.isArray(parsed.ingredients)) {
+          throw new Error("format invalide");
+        }
+        update(() => migrateWeeklyPlan(parsed));
+        setImportError("");
+        setImportDone(true);
+        setTimeout(() => setImportDone(false), 4000);
+      } catch {
+        setImportError("Fichier invalide — vérifie que c'est bien une sauvegarde Recipy (.json).");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
   return (
-    <div className="mp-card" style={{ maxWidth: 480 }}>
-      <div className="mp-label" style={{ marginBottom: 10 }}>Données</div>
-      <div style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 12, lineHeight: 1.5 }}>
-        Tes {data.recipes.length} recettes et {data.ingredients.length} ingrédients sont stockés sur cet appareil.
-      </div>
-      {confirmReset ? (
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 12.5 }}>Tout remettre à zéro (recettes créées, likes, planning, courses) ?</span>
-          <button className="mp-btn mp-btn-danger" onClick={doReset}>Confirmer</button>
-          <button className="mp-btn mp-btn-ghost" onClick={() => setConfirmReset(false)}>Annuler</button>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 480 }}>
+      <div className="mp-card">
+        <div className="mp-label" style={{ marginBottom: 10 }}>Sauvegarde</div>
+        <div style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 12, lineHeight: 1.5 }}>
+          Tout est stocké uniquement sur cet appareil — si tu changes de téléphone ou vides le cache, tout est perdu. Exporte régulièrement un fichier de sauvegarde pour pouvoir tout restaurer.
         </div>
-      ) : (
-        <button className="mp-btn mp-btn-danger" onClick={() => setConfirmReset(true)}><Trash2 size={14} /> Réinitialiser les données</button>
-      )}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button className="mp-btn mp-btn-sage" style={{ color: "#fff" }} onClick={handleExport}><Download size={14} /> Exporter mes données</button>
+          <input ref={importInputRef} type="file" accept="application/json" style={{ display: "none" }} onChange={handleImportFile} />
+          <button className="mp-btn mp-btn-ghost" onClick={() => importInputRef.current?.click()}><Upload size={14} /> Importer une sauvegarde</button>
+        </div>
+        {importDone && <div style={{ fontSize: 12.5, color: "var(--sage-deep)", marginTop: 8 }}>Sauvegarde restaurée avec succès.</div>}
+        {importError && <div style={{ fontSize: 12.5, color: "var(--danger)", marginTop: 8 }}>{importError}</div>}
+      </div>
+
+      <div className="mp-card">
+        <div className="mp-label" style={{ marginBottom: 10 }}>Données</div>
+        <div style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 12, lineHeight: 1.5 }}>
+          Tes {data.recipes.length} recettes et {data.ingredients.length} ingrédients sont stockés sur cet appareil.
+        </div>
+        {confirmReset ? (
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12.5 }}>Tout remettre à zéro (recettes créées, likes, planning, courses) ?</span>
+            <button className="mp-btn mp-btn-danger" onClick={doReset}>Confirmer</button>
+            <button className="mp-btn mp-btn-ghost" onClick={() => setConfirmReset(false)}>Annuler</button>
+          </div>
+        ) : (
+          <button className="mp-btn mp-btn-danger" onClick={() => setConfirmReset(true)}><Trash2 size={14} /> Réinitialiser les données</button>
+        )}
+      </div>
     </div>
   );
 }
@@ -1703,10 +1803,13 @@ function RecipeDetailModal({ recipeId, data, onClose, onEdit, toggleLike }) {
       </div>
 
       {(r.calories || r.proteines || r.lipides) && (
-        <div className="mp-stat-row" style={{ marginBottom: 18 }}>
-          {r.calories ? <div className="mp-stat-pill"><div className="mp-stat-value">{r.calories}</div><div className="mp-stat-label">kcal</div></div> : null}
-          {r.proteines ? <div className="mp-stat-pill"><div className="mp-stat-value">{r.proteines} g</div><div className="mp-stat-label">Protéines</div></div> : null}
-          {r.lipides ? <div className="mp-stat-pill"><div className="mp-stat-value">{r.lipides} g</div><div className="mp-stat-label">Lipides</div></div> : null}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 10.5, color: "var(--ink-faint)", marginBottom: 4 }}>Valeurs pour 1 portion</div>
+          <div className="mp-stat-row">
+            {r.calories ? <div className="mp-stat-pill"><div className="mp-stat-value">{r.calories}</div><div className="mp-stat-label">kcal</div></div> : null}
+            {r.proteines ? <div className="mp-stat-pill"><div className="mp-stat-value">{r.proteines} g</div><div className="mp-stat-label">Protéines</div></div> : null}
+            {r.lipides ? <div className="mp-stat-pill"><div className="mp-stat-value">{r.lipides} g</div><div className="mp-stat-label">Lipides</div></div> : null}
+          </div>
         </div>
       )}
 
@@ -1962,8 +2065,8 @@ function RecipeModal({ recipeModal, data, update, setRecipeModal, deleteRecipe }
 const STORAGE_KEY = "meal-planner-data-v1";
 const NAV_ITEMS = [
   { id: "planning", label: "Planning", icon: CalendarDays },
-  { id: "liked", label: "Recettes", icon: Heart },
-  { id: "discover", label: "Swipe", icon: Utensils },
+  { id: "liked", label: "Mes likes", icon: Heart },
+  { id: "discover", label: "Swipe", icon: Sparkles },
   { id: "shopping", label: "Panier", icon: ShoppingCart },
   { id: "create", label: "Créer", icon: Pencil },
 ];
@@ -2089,6 +2192,7 @@ export default function MealPlannerApp() {
   }, [update]);
   const clearShoppingList = useCallback(() => update((d) => { d.shoppingList = []; return d; }), [update]);
   const markSeen = useCallback((recipeId) => update((d) => { d.swipeDeckSeenIds = [...(d.swipeDeckSeenIds || []), recipeId]; return d; }), [update]);
+  const unmarkSeen = useCallback((recipeId) => update((d) => { d.swipeDeckSeenIds = (d.swipeDeckSeenIds || []).filter((x) => x !== recipeId); return d; }), [update]);
   const resetDeck = useCallback(() => update((d) => { d.swipeDeckSeenIds = []; return d; }), [update]);
 
   if (!loaded || !data) {
@@ -2114,7 +2218,7 @@ export default function MealPlannerApp() {
   );
 
   const screenProps = {
-    discover: { data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, resetDeck, setRecipeModal, goToProfile: () => setScreen("profile") },
+    discover: { data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, unmarkSeen, resetDeck, setRecipeModal, goToProfile: () => setScreen("profile") },
     liked: { data, likedRecipes, likedSelection, setLikedSelection, setRecipeModal, update },
     planning: { data, likedRecipes, addToPlan, removeFromPlan, clearWeek, generateShoppingList, setRecipeModal },
     shopping: { data, generateShoppingList, toggleShoppingItem, clearShoppingList, addManualShoppingItem, removeShoppingItem, goToPlanning: () => setScreen("planning") },
