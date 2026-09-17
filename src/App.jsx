@@ -605,9 +605,9 @@ const STYLE = `
     width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface);
     display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink-soft);
   }
-  .mp-round-btn.like { background: var(--terracotta); border-color: var(--terracotta); color: #fff; }
-  .mp-round-btn.pass { width: 40px; height: 40px; background: var(--surface-2); border-color: var(--surface-2); color: var(--ink); }
-  .mp-round-btn.info { width: 38px; height: 38px; background: var(--sage); border-color: var(--sage); color: #fff; }
+  .mp-round-btn.like { background: var(--sage); border-color: var(--sage); color: #fff; }
+  .mp-round-btn.pass { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .mp-round-btn.info { width: 38px; height: 38px; background: var(--surface-2); border-color: var(--surface-2); color: var(--ink-soft); }
   .mp-round-btn:hover { filter: brightness(0.97); }
 
   /* Badges & pastilles style Recipy */
@@ -1065,9 +1065,9 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
 
         {top && (
           <div className="mp-deck-actions" style={{ flexShrink: 0 }}>
-            <button className="mp-round-btn pass" onClick={() => resolveSwipe("pass")} aria-label="Passer"><X size={20} /></button>
-            <button className="mp-round-btn info" style={{ width: 58, height: 58 }} onClick={() => setRecipeModal(top.id)} aria-label="Plus d'informations"><Info size={22} /></button>
             <button className="mp-round-btn like" onClick={() => resolveSwipe("like")} aria-label="J'aime"><Heart size={20} fill="currentColor" /></button>
+            <button className="mp-round-btn info" onClick={() => setRecipeModal(top.id)} aria-label="Plus d'informations"><Info size={17} /></button>
+            <button className="mp-round-btn pass" onClick={() => resolveSwipe("pass")} aria-label="Passer"><X size={20} /></button>
           </div>
         )}
       </div>
