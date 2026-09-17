@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Heart, X, Info, ChevronLeft, ChevronRight, Plus, Trash2, Check,
+  Heart, X, ChevronLeft, ChevronRight, Plus, Trash2, Check,
   Pencil, ShoppingCart, CalendarDays, BookOpen, Sparkles, User,
   Search, ArrowLeft, RotateCcw, Minus, Image as ImageIcon, Menu, Utensils,
   SlidersHorizontal
@@ -18,6 +18,7 @@ const uid = (prefix) => {
 
 const normalizeName = (s) => s.trim().toLowerCase();
 const capitalize = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+const getInitials = (nom) => (nom || "").trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
 
 const DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
 const DAY_LABELS = { lundi: "Lundi", mardi: "Mardi", mercredi: "Mercredi", jeudi: "Jeudi", vendredi: "Vendredi", samedi: "Samedi", dimanche: "Dimanche" };
@@ -41,6 +42,8 @@ const SEED_RECIPES = [
     titre: "Raviolis, crème, jambon, beurre",
     photo: "/recipes/raviolis-creme-jambon-beurre.jpg",
     temps_preparation: 10, difficulte: "facile", prix_estime: 4,
+    description: "Raviolis frais, crème onctueuse et jambon doré au beurre.",
+    calories: 610, proteines: 22, lipides: 28,
     tags: ["rapide", "économique"],
     etapes: ["Faire chauffer une noix de beurre dans une poêle.", "Ajouter les raviolis et un fond d'eau, couvrir 5 min.", "Ajouter la crème et le jambon coupé en lanières, mélanger 2 min à feu doux."],
     ingredients: [{ nom: "raviolis frais", quantite: 500, unite: "g" }, { nom: "crème fraîche", quantite: 20, unite: "cl" }, { nom: "jambon blanc", quantite: 2, unite: "pièce" }, { nom: "beurre", quantite: 20, unite: "g" }],
@@ -49,6 +52,8 @@ const SEED_RECIPES = [
     titre: "Pâtes à la carbonara",
     photo: "/recipes/pates-carbonara.jpg",
     temps_preparation: 20, difficulte: "facile", prix_estime: 6,
+    description: "Spaghetti, lardons croustillants et sauce onctueuse aux œufs.",
+    calories: 640, proteines: 26, lipides: 30,
     tags: ["rapide"],
     etapes: ["Cuire les pâtes dans l'eau bouillante salée.", "Faire revenir les lardons à sec.", "Mélanger œufs, parmesan et poivre dans un bol.", "Égoutter les pâtes, mélanger hors du feu avec les lardons puis l'appareil œufs-parmesan."],
     ingredients: [{ nom: "spaghetti", quantite: 400, unite: "g" }, { nom: "lardons", quantite: 200, unite: "g" }, { nom: "œuf", quantite: 3, unite: "pièce" }, { nom: "parmesan", quantite: 60, unite: "g" }, { nom: "poivre", quantite: 1, unite: "pincée" }],
@@ -57,6 +62,8 @@ const SEED_RECIPES = [
     titre: "Curry de pois chiches",
     photo: "/recipes/curry-pois-chiches.jpg",
     temps_preparation: 30, difficulte: "facile", prix_estime: 5,
+    description: "Pois chiches mijotés dans une sauce tomate-coco épicée.",
+    calories: 420, proteines: 14, lipides: 18,
     tags: ["végan", "économique", "sans gluten"],
     etapes: ["Faire revenir oignon et ail dans l'huile.", "Ajouter les épices puis les tomates concassées, laisser réduire 5 min.", "Ajouter les pois chiches et le lait de coco, mijoter 15 min."],
     ingredients: [{ nom: "pois chiches cuits", quantite: 400, unite: "g" }, { nom: "lait de coco", quantite: 400, unite: "ml" }, { nom: "tomates concassées", quantite: 400, unite: "g" }, { nom: "oignon", quantite: 1, unite: "pièce" }, { nom: "ail", quantite: 2, unite: "pièce" }, { nom: "curry en poudre", quantite: 1, unite: "cuillère à soupe" }],
@@ -65,6 +72,8 @@ const SEED_RECIPES = [
     titre: "Poulet rôti aux herbes",
     photo: "/recipes/poulet-roti-herbes.jpg",
     temps_preparation: 90, difficulte: "moyen", prix_estime: 12,
+    description: "Poulet entier doré au four, thym et ail.",
+    calories: 520, proteines: 42, lipides: 32,
     tags: ["riche en protéines", "hiver"],
     etapes: ["Préchauffer le four à 200°C.", "Frotter le poulet avec beurre, thym et ail.", "Enfourner 1h15 en arrosant régulièrement."],
     ingredients: [{ nom: "poulet entier", quantite: 1, unite: "pièce" }, { nom: "beurre", quantite: 40, unite: "g" }, { nom: "thym", quantite: 1, unite: "cuillère à café" }, { nom: "ail", quantite: 3, unite: "pièce" }],
@@ -73,6 +82,8 @@ const SEED_RECIPES = [
     titre: "Salade de lentilles, feta, tomates",
     photo: "/recipes/salade-lentilles-feta-tomates.jpg",
     temps_preparation: 15, difficulte: "facile", prix_estime: 5,
+    description: "Lentilles, feta et tomates fraîches, filet d'huile d'olive.",
+    calories: 380, proteines: 18, lipides: 20,
     tags: ["végétarien", "été", "rapide"],
     etapes: ["Rincer les lentilles cuites.", "Couper tomates et feta en dés.", "Mélanger le tout avec un filet d'huile d'olive et du vinaigre."],
     ingredients: [{ nom: "lentilles cuites", quantite: 300, unite: "g" }, { nom: "feta", quantite: 100, unite: "g" }, { nom: "tomate", quantite: 3, unite: "pièce" }, { nom: "huile d'olive", quantite: 2, unite: "cuillère à soupe" }],
@@ -81,6 +92,8 @@ const SEED_RECIPES = [
     titre: "Risotto aux champignons",
     photo: "/recipes/risotto-champignons.jpg",
     temps_preparation: 35, difficulte: "moyen", prix_estime: 7,
+    description: "Riz crémeux aux champignons de Paris et parmesan.",
+    calories: 480, proteines: 12, lipides: 16,
     tags: ["végétarien"],
     etapes: ["Faire revenir l'oignon émincé dans du beurre.", "Ajouter le riz, nacrer 2 min.", "Verser le bouillon louche par louche en remuant jusqu'à absorption complète, 20 min.", "Ajouter les champignons poêlés et le parmesan hors du feu."],
     ingredients: [{ nom: "riz arborio", quantite: 300, unite: "g" }, { nom: "champignons de paris", quantite: 250, unite: "g" }, { nom: "bouillon de légumes", quantite: 1, unite: "l" }, { nom: "oignon", quantite: 1, unite: "pièce" }, { nom: "parmesan", quantite: 50, unite: "g" }, { nom: "beurre", quantite: 30, unite: "g" }],
@@ -89,6 +102,8 @@ const SEED_RECIPES = [
     titre: "Omelette aux fines herbes",
     photo: "/recipes/omelette-fines-herbes.jpg",
     temps_preparation: 10, difficulte: "facile", prix_estime: 2,
+    description: "Œufs battus aux herbes fraîches, cuits à la poêle.",
+    calories: 310, proteines: 20, lipides: 24,
     tags: ["rapide", "économique", "végétarien"],
     etapes: ["Battre les œufs avec sel, poivre et herbes.", "Cuire dans une poêle beurrée à feu moyen, plier en deux."],
     ingredients: [{ nom: "œuf", quantite: 4, unite: "pièce" }, { nom: "ciboulette", quantite: 1, unite: "cuillère à soupe" }, { nom: "beurre", quantite: 10, unite: "g" }],
@@ -97,6 +112,8 @@ const SEED_RECIPES = [
     titre: "Chili sin carne",
     photo: "/recipes/chili-sin-carne.jpg",
     temps_preparation: 40, difficulte: "moyen", prix_estime: 5,
+    description: "Haricots rouges, maïs et poivrons mijotés aux épices.",
+    calories: 390, proteines: 16, lipides: 8,
     tags: ["végan", "économique", "hiver"],
     etapes: ["Faire revenir oignon, poivron et ail.", "Ajouter tomates concassées, haricots rouges, maïs et épices.", "Laisser mijoter 25 min à couvert."],
     ingredients: [{ nom: "haricots rouges cuits", quantite: 400, unite: "g" }, { nom: "maïs", quantite: 200, unite: "g" }, { nom: "tomates concassées", quantite: 400, unite: "g" }, { nom: "poivron", quantite: 1, unite: "pièce" }, { nom: "oignon", quantite: 1, unite: "pièce" }, { nom: "piment doux", quantite: 1, unite: "cuillère à café" }],
@@ -105,6 +122,8 @@ const SEED_RECIPES = [
     titre: "Saumon, riz, brocolis",
     photo: "/recipes/saumon-riz-brocolis.jpg",
     temps_preparation: 25, difficulte: "facile", prix_estime: 9,
+    description: "Pavé de saumon poêlé, riz basmati et brocolis vapeur.",
+    calories: 520, proteines: 34, lipides: 22,
     tags: ["riche en protéines", "sans gluten"],
     etapes: ["Cuire le riz.", "Cuire le saumon à la poêle 4 min de chaque côté.", "Cuire les brocolis à la vapeur 8 min."],
     ingredients: [{ nom: "pavé de saumon", quantite: 2, unite: "pièce" }, { nom: "riz basmati", quantite: 150, unite: "g" }, { nom: "brocoli", quantite: 300, unite: "g" }],
@@ -113,6 +132,8 @@ const SEED_RECIPES = [
     titre: "Soupe potiron-châtaigne",
     photo: "/recipes/soupe-potiron-chataigne.jpg",
     temps_preparation: 35, difficulte: "facile", prix_estime: 4,
+    description: "Velouté de potiron et châtaignes, tout en douceur.",
+    calories: 240, proteines: 6, lipides: 6,
     tags: ["végan", "hiver", "économique", "sans gluten"],
     etapes: ["Faire revenir l'oignon.", "Ajouter le potiron coupé et les châtaignes, couvrir d'eau.", "Cuire 25 min puis mixer."],
     ingredients: [{ nom: "potiron", quantite: 800, unite: "g" }, { nom: "châtaignes cuites", quantite: 200, unite: "g" }, { nom: "oignon", quantite: 1, unite: "pièce" }],
@@ -121,6 +142,8 @@ const SEED_RECIPES = [
     titre: "Tartines avocat, œuf poché",
     photo: "/recipes/tartines-avocat-oeuf-poche.jpg",
     temps_preparation: 15, difficulte: "facile", prix_estime: 4,
+    description: "Pain grillé, avocat écrasé et œuf poché coulant.",
+    calories: 350, proteines: 14, lipides: 20,
     tags: ["végétarien", "rapide"],
     etapes: ["Griller le pain.", "Écraser l'avocat avec citron, sel, poivre sur les tartines.", "Pocher les œufs 3 min dans l'eau frémissante vinaigrée, déposer sur les tartines."],
     ingredients: [{ nom: "pain de campagne", quantite: 4, unite: "pièce" }, { nom: "avocat", quantite: 2, unite: "pièce" }, { nom: "œuf", quantite: 2, unite: "pièce" }, { nom: "citron", quantite: 1, unite: "pièce" }],
@@ -129,6 +152,8 @@ const SEED_RECIPES = [
     titre: "Tajine de légumes",
     photo: "/recipes/tajine-legumes.jpg",
     temps_preparation: 50, difficulte: "moyen", prix_estime: 6,
+    description: "Carottes, courgettes et pois chiches mijotés aux épices douces.",
+    calories: 340, proteines: 12, lipides: 10,
     tags: ["végan", "sans gluten", "hiver"],
     etapes: ["Faire revenir oignon et épices.", "Ajouter carottes, courgettes, pois chiches et un peu d'eau.", "Mijoter 35 min à couvert."],
     ingredients: [{ nom: "carotte", quantite: 3, unite: "pièce" }, { nom: "courgette", quantite: 2, unite: "pièce" }, { nom: "pois chiches cuits", quantite: 300, unite: "g" }, { nom: "oignon", quantite: 1, unite: "pièce" }, { nom: "cumin", quantite: 1, unite: "cuillère à café" }],
@@ -137,6 +162,8 @@ const SEED_RECIPES = [
     titre: "Gratin dauphinois",
     photo: "/recipes/gratin-dauphinois.jpg",
     temps_preparation: 75, difficulte: "moyen", prix_estime: 4,
+    description: "Pommes de terre fondantes, crème et une pointe d'ail.",
+    calories: 430, proteines: 8, lipides: 24,
     tags: ["végétarien", "hiver", "économique"],
     etapes: ["Préchauffer le four à 180°C.", "Couper les pommes de terre en fines rondelles.", "Disposer en couches dans un plat avec crème, lait, ail et muscade.", "Cuire 1h15."],
     ingredients: [{ nom: "pomme de terre", quantite: 1, unite: "kg" }, { nom: "crème fraîche", quantite: 20, unite: "cl" }, { nom: "lait", quantite: 20, unite: "cl" }, { nom: "ail", quantite: 1, unite: "pièce" }],
@@ -145,6 +172,8 @@ const SEED_RECIPES = [
     titre: "Poke bowl thon-mangue",
     photo: "/recipes/poke-bowl-thon-mangue.jpg",
     temps_preparation: 20, difficulte: "facile", prix_estime: 8,
+    description: "Thon frais, mangue et riz vinaigré, frais et coloré.",
+    calories: 480, proteines: 28, lipides: 12,
     tags: ["été", "riche en protéines", "sans gluten"],
     etapes: ["Cuire le riz vinaigré.", "Couper thon, mangue et concombre en dés.", "Dresser le bol et ajouter sésame et sauce soja."],
     ingredients: [{ nom: "thon frais", quantite: 200, unite: "g" }, { nom: "riz à sushi", quantite: 150, unite: "g" }, { nom: "mangue", quantite: 1, unite: "pièce" }, { nom: "concombre", quantite: 1, unite: "pièce" }, { nom: "graines de sésame", quantite: 1, unite: "cuillère à soupe" }],
@@ -153,6 +182,8 @@ const SEED_RECIPES = [
     titre: "Pancakes moelleux",
     photo: "/recipes/pancakes-moelleux.jpg",
     temps_preparation: 20, difficulte: "facile", prix_estime: 3,
+    description: "Petites crêpes épaisses et moelleuses, à garnir à l'envi.",
+    calories: 380, proteines: 10, lipides: 14,
     tags: ["sucré", "économique"],
     etapes: ["Mélanger farine, levure, sucre et sel.", "Ajouter œuf, lait et beurre fondu, fouetter.", "Cuire des petites louches à la poêle 2 min de chaque côté."],
     ingredients: [{ nom: "farine", quantite: 250, unite: "g" }, { nom: "lait", quantite: 30, unite: "cl" }, { nom: "œuf", quantite: 2, unite: "pièce" }, { nom: "sucre", quantite: 2, unite: "cuillère à soupe" }, { nom: "levure chimique", quantite: 1, unite: "cuillère à café" }, { nom: "beurre", quantite: 30, unite: "g" }],
@@ -161,6 +192,8 @@ const SEED_RECIPES = [
     titre: "Quiche lorraine",
     photo: "/recipes/quiche-lorraine.jpg",
     temps_preparation: 50, difficulte: "moyen", prix_estime: 5,
+    description: "Pâte croustillante, lardons et appareil œufs-crème.",
+    calories: 460, proteines: 16, lipides: 30,
     tags: ["économique"],
     etapes: ["Préchauffer le four à 190°C.", "Foncer un moule avec la pâte.", "Mélanger œufs, crème, lardons, verser sur la pâte.", "Cuire 35 min."],
     ingredients: [{ nom: "pâte brisée", quantite: 1, unite: "pièce" }, { nom: "lardons", quantite: 200, unite: "g" }, { nom: "œuf", quantite: 3, unite: "pièce" }, { nom: "crème fraîche", quantite: 20, unite: "cl" }],
@@ -169,6 +202,8 @@ const SEED_RECIPES = [
     titre: "Bowl quinoa, légumes rôtis, houmous",
     photo: "/recipes/bowl-quinoa-legumes-rotis-houmous.jpg",
     temps_preparation: 35, difficulte: "facile", prix_estime: 6,
+    description: "Quinoa, légumes rôtis et houmous crémeux.",
+    calories: 410, proteines: 14, lipides: 16,
     tags: ["végan", "sans gluten", "riche en protéines"],
     etapes: ["Cuire le quinoa.", "Rôtir les légumes coupés 25 min à 200°C avec huile d'olive.", "Dresser le bol avec le houmous."],
     ingredients: [{ nom: "quinoa", quantite: 150, unite: "g" }, { nom: "courgette", quantite: 1, unite: "pièce" }, { nom: "poivron", quantite: 1, unite: "pièce" }, { nom: "houmous", quantite: 100, unite: "g" }, { nom: "huile d'olive", quantite: 2, unite: "cuillère à soupe" }],
@@ -177,6 +212,8 @@ const SEED_RECIPES = [
     titre: "Croque-monsieur",
     photo: "/recipes/croque-monsieur.jpg",
     temps_preparation: 15, difficulte: "facile", prix_estime: 3,
+    description: "Jambon et gruyère fondant entre deux tranches dorées.",
+    calories: 450, proteines: 22, lipides: 24,
     tags: ["rapide", "économique"],
     etapes: ["Tartiner le pain de béchamel.", "Garnir de jambon et de gruyère râpé.", "Passer au four ou à la poêle jusqu'à ce que ce soit doré."],
     ingredients: [{ nom: "pain de mie", quantite: 4, unite: "pièce" }, { nom: "jambon blanc", quantite: 2, unite: "pièce" }, { nom: "gruyère râpé", quantite: 100, unite: "g" }, { nom: "béchamel", quantite: 100, unite: "g" }],
@@ -202,6 +239,7 @@ function buildSeedData() {
     id: uid("rec"),
     titre: r.titre,
     photo: r.photo || null,
+    description: r.description || "",
     etapes: r.etapes,
     temps_preparation: r.temps_preparation,
     difficulte: r.difficulte,
@@ -522,13 +560,13 @@ const STYLE = `
 
   /* Swipe deck */
   .mp-deck-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 0; }
-  .mp-deck { position: relative; width: 100%; max-width: 320px; height: min(48dvh, 400px); }
+  .mp-deck { position: relative; width: 100%; max-width: 320px; height: min(54dvh, 440px); }
   .mp-swipe-card {
     position: absolute; inset: 0; border-radius: 32px; background: var(--surface);
     border: none; display: flex; flex-direction: column; overflow: hidden;
     box-shadow: 0 8px 24px rgba(160,20,70,.16); cursor: grab; user-select: none;
   }
-  .mp-swipe-photo-wrap { height: 48%; flex-shrink: 0; position: relative; overflow: hidden; }
+  .mp-swipe-photo-wrap { height: 44%; flex-shrink: 0; position: relative; overflow: hidden; }
   .mp-swipe-photo {
     height: 100%; background: var(--surface-2);
     display: flex; align-items: center; justify-content: center; color: var(--terracotta);
@@ -904,7 +942,7 @@ function CreateScreen({ data, update }) {
   );
 }
 
-function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, resetDeck, setRecipeModal }) {
+function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, resetDeck, setRecipeModal, goToProfile }) {
   const top = deckRecipes[0];
   const [drag, setDrag] = useState({ x: 0, active: false });
   const startX = useRef(0);
@@ -937,14 +975,13 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
           <div className="mp-eyebrow">{data.recipes.length} recettes à découvrir</div>
           <h1 className="mp-serif mp-title">Swipe</h1>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          {profileTagIds.length > 0 && (
+        {profileTagIds.length > 0 && (
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <TagPill onClick={() => setUseProfileFilter((v) => !v)} selected={useProfileFilter}>
               Filtrer selon mon profil
             </TagPill>
-          )}
-          <button className="mp-btn mp-btn-ghost" onClick={resetDeck}><RotateCcw size={14} /> Revoir tout</button>
-        </div>
+          </div>
+        )}
       </div>
 
       {!useProfileFilter && (
@@ -980,7 +1017,10 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
                 <div className="mp-swipe-photo-wrap">
                   <RecipeThumb recipe={r} className="mp-swipe-photo" />
                   {r.tag_ids[0] && <span className="mp-photo-badge">{tagName(data, r.tag_ids[0])}</span>}
-                  {r.liked && <span className="mp-photo-like"><Heart size={15} fill="currentColor" /></span>}
+                  <button className="mp-photo-like" style={{ border: "none", padding: 0, cursor: "pointer", background: r.liked ? "var(--terracotta)" : "rgba(255,255,255,.9)", color: r.liked ? "#fff" : "var(--terracotta)" }}
+                    onClick={(e) => { e.stopPropagation(); toggleLike(r.id); }} aria-label="Liker">
+                    <Heart size={15} fill={r.liked ? "currentColor" : "none"} />
+                  </button>
                 </div>
                 <div className="mp-swipe-body">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -988,9 +1028,10 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
                     <span style={{ fontSize: 11, color: "var(--ink-faint)" }}>N° {data.recipes.findIndex((x) => x.id === r.id) + 1}</span>
                   </div>
                   <p className="mp-serif mp-swipe-title">{r.titre}</p>
+                  {r.description && <p style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.35, margin: "1px 0 0" }}>{r.description}</p>}
                   <div className="mp-swipe-meta">
                     {r.temps_preparation ? <span>{r.temps_preparation} min</span> : null}
-                    {r.difficulte ? <span>{r.difficulte}</span> : null}
+                    {r.difficulte ? <span>{capitalize(r.difficulte)}</span> : null}
                     {r.portions ? <span>{r.portions} pers</span> : null}
                   </div>
                   {(r.calories || r.proteines || r.lipides) ? (
@@ -1013,11 +1054,24 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
         {top && (
           <div className="mp-deck-actions">
             <button className="mp-round-btn pass" onClick={() => resolveSwipe("pass")} aria-label="Passer"><X size={20} /></button>
-            <button className="mp-round-btn info" style={{ width: 58, height: 58 }} onClick={() => setRecipeModal(top.id)} aria-label="Détails"><Info size={22} /></button>
+            <button className="mp-round-btn info" style={{ width: 58, height: 58 }} onClick={() => resolveSwipe("like")} aria-label="Garder"><Check size={24} /></button>
             <button className="mp-round-btn like" onClick={() => resolveSwipe("like")} aria-label="J'aime"><Heart size={20} fill="currentColor" /></button>
           </div>
         )}
       </div>
+
+      <div className="mp-card" style={{ marginTop: 18, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div>
+          <div className="mp-serif" style={{ fontSize: 15, fontWeight: 600 }}>À votre sauce</div>
+          <div style={{ fontSize: 12, color: "var(--ink-soft)" }}>Portions, ingrédients, allergies…</div>
+        </div>
+        {goToProfile && (
+          <button className="mp-btn mp-btn-primary" style={{ flexShrink: 0 }} onClick={goToProfile}><Pencil size={13} /> Modifier</button>
+        )}
+      </div>
+      <button className="mp-btn mp-btn-ghost" style={{ display: "flex", margin: "10px auto 0" }} onClick={resetDeck}>
+        <RotateCcw size={13} /> Recommencer la sélection
+      </button>
     </div>
   );
 }
@@ -2003,7 +2057,7 @@ export default function MealPlannerApp() {
   );
 
   const screenProps = {
-    discover: { data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, resetDeck, setRecipeModal },
+    discover: { data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, resetDeck, setRecipeModal, goToProfile: () => setScreen("profile") },
     liked: { data, likedRecipes, likedSelection, setLikedSelection, setRecipeModal, update },
     planning: { data, likedRecipes, addToPlan, removeFromPlan, clearWeek, generateShoppingList, setRecipeModal },
     shopping: { data, generateShoppingList, toggleShoppingItem, clearShoppingList, addManualShoppingItem, removeShoppingItem, goToPlanning: () => setScreen("planning") },
@@ -2022,7 +2076,11 @@ export default function MealPlannerApp() {
           <main className="mp-main">
             <div className="mp-topbar">
               <button className={`mp-round-btn ${screen === "profile" ? "mp-profile-active" : ""}`} onClick={() => setScreen("profile")} aria-label="Profil">
-                <User size={17} />
+                {getInitials(data.userProfile.compte?.nom) ? (
+                  <span className="mp-serif" style={{ fontSize: 14, fontWeight: 600 }}>{getInitials(data.userProfile.compte.nom)}</span>
+                ) : (
+                  <User size={17} />
+                )}
               </button>
             </div>
             <ActiveScreen {...screenProps[screen]} />
