@@ -19,6 +19,14 @@ const uid = (prefix) => {
 const normalizeName = (s) => s.trim().toLowerCase();
 const capitalize = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 const getInitials = (nom) => (nom || "").trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 const DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
 const DAY_LABELS = { lundi: "Lundi", mardi: "Mardi", mercredi: "Mercredi", jeudi: "Jeudi", vendredi: "Vendredi", samedi: "Samedi", dimanche: "Dimanche" };
@@ -36,6 +44,8 @@ const TAG_NAMES = [
   "végétarien", "végan", "sans gluten", "sans lactose", "grossesse",
   "rapide", "économique", "riche en protéines", "sucré", "hiver", "été",
 ];
+
+const ESSENTIAL_SEED = ["Papier toilette", "Sopalin", "Dentifrice", "Liquide vaisselle", "Lessive", "Litière", "Mouchoirs"];
 
 const SEED_RECIPES = [
   {
@@ -218,6 +228,86 @@ const SEED_RECIPES = [
     etapes: ["Tartiner le pain de béchamel.", "Garnir de jambon et de gruyère râpé.", "Passer au four ou à la poêle jusqu'à ce que ce soit doré."],
     ingredients: [{ nom: "pain de mie", quantite: 4, unite: "pièce" }, { nom: "jambon blanc", quantite: 2, unite: "pièce" }, { nom: "gruyère râpé", quantite: 100, unite: "g" }, { nom: "béchamel", quantite: 100, unite: "g" }],
   },
+  {
+    titre: "Pad thaï au poulet",
+    photo: "/recipes/pad-thai-poulet.jpg",
+    temps_preparation: 30, difficulte: "moyen", prix_estime: 7,
+    description: "Nouilles sautées, poulet, cacahuètes et sauce sucrée-salée.",
+    calories: 560, proteines: 30, lipides: 18,
+    tags: ["riche en protéines"],
+    etapes: ["Faire tremper les nouilles de riz dans l'eau chaude.", "Faire sauter le poulet coupé en lanières.", "Ajouter les nouilles, la sauce pad thaï et les œufs battus, mélanger 2 min.", "Parsemer de cacahuètes concassées et de citron vert."],
+    ingredients: [{ nom: "nouilles de riz", quantite: 200, unite: "g" }, { nom: "blanc de poulet", quantite: 300, unite: "g" }, { nom: "œuf", quantite: 2, unite: "pièce" }, { nom: "cacahuètes", quantite: 40, unite: "g" }, { nom: "sauce pad thaï", quantite: 3, unite: "cuillère à soupe" }, { nom: "citron vert", quantite: 1, unite: "pièce" }],
+  },
+  {
+    titre: "Wraps au poulet croustillant",
+    photo: "/recipes/wraps-poulet-croustillant.jpg",
+    temps_preparation: 25, difficulte: "facile", prix_estime: 6,
+    description: "Poulet pané croustillant, crudités et sauce dans une tortilla moelleuse.",
+    calories: 520, proteines: 28, lipides: 20,
+    tags: ["rapide"],
+    etapes: ["Paner les aiguillettes de poulet et les cuire à la poêle jusqu'à ce qu'elles soient dorées.", "Couper la salade, la tomate et l'oignon rouge.", "Garnir les tortillas de poulet, crudités et sauce, puis rouler."],
+    ingredients: [{ nom: "aiguillettes de poulet", quantite: 400, unite: "g" }, { nom: "tortilla de blé", quantite: 4, unite: "pièce" }, { nom: "salade", quantite: 1, unite: "pièce" }, { nom: "tomate", quantite: 2, unite: "pièce" }, { nom: "sauce fromagère", quantite: 3, unite: "cuillère à soupe" }],
+  },
+  {
+    titre: "Ratatouille",
+    photo: "/recipes/ratatouille.jpg",
+    temps_preparation: 45, difficulte: "facile", prix_estime: 6,
+    description: "Aubergines, courgettes, poivrons et tomates mijotés aux herbes de Provence.",
+    calories: 220, proteines: 5, lipides: 9,
+    tags: ["végan", "été", "sans gluten", "économique"],
+    etapes: ["Couper tous les légumes en dés.", "Faire revenir l'oignon et l'ail dans l'huile d'olive.", "Ajouter les légumes et les herbes de Provence, laisser mijoter 35 min à couvert en remuant de temps en temps."],
+    ingredients: [{ nom: "aubergine", quantite: 2, unite: "pièce" }, { nom: "courgette", quantite: 2, unite: "pièce" }, { nom: "poivron", quantite: 2, unite: "pièce" }, { nom: "tomate", quantite: 4, unite: "pièce" }, { nom: "oignon", quantite: 1, unite: "pièce" }, { nom: "ail", quantite: 2, unite: "pièce" }, { nom: "herbes de provence", quantite: 1, unite: "cuillère à soupe" }],
+  },
+  {
+    titre: "Soupe miso",
+    photo: "/recipes/soupe-miso.jpg",
+    temps_preparation: 15, difficulte: "facile", prix_estime: 4,
+    description: "Bouillon miso, tofu soyeux, algues wakamé et oignon nouveau.",
+    calories: 140, proteines: 9, lipides: 5,
+    tags: ["végétarien", "rapide", "sans gluten"],
+    etapes: ["Faire chauffer le bouillon dashi sans le laisser bouillir.", "Diluer la pâte miso dans un peu de bouillon puis reverser dans la casserole.", "Ajouter le tofu en dés et les algues wakamé réhydratées.", "Parsemer d'oignon nouveau émincé avant de servir."],
+    ingredients: [{ nom: "pâte miso", quantite: 3, unite: "cuillère à soupe" }, { nom: "tofu soyeux", quantite: 150, unite: "g" }, { nom: "algues wakamé", quantite: 10, unite: "g" }, { nom: "oignon nouveau", quantite: 1, unite: "pièce" }, { nom: "bouillon dashi", quantite: 1, unite: "l" }],
+  },
+  {
+    titre: "Bœuf bourguignon",
+    photo: "/recipes/boeuf-bourguignon.jpg",
+    temps_preparation: 150, difficulte: "difficile", prix_estime: 14,
+    description: "Bœuf mijoté longuement au vin rouge, carottes et champignons.",
+    calories: 480, proteines: 38, lipides: 24,
+    tags: ["hiver", "riche en protéines"],
+    etapes: ["Faire dorer les morceaux de bœuf dans une cocotte.", "Ajouter les lardons, oignons et carottes, faire revenir 5 min.", "Saupoudrer de farine, mouiller avec le vin rouge, ajouter le bouquet garni.", "Laisser mijoter à couvert 2h à feu doux, ajouter les champignons 20 min avant la fin."],
+    ingredients: [{ nom: "bœuf à bourguignon", quantite: 800, unite: "g" }, { nom: "carotte", quantite: 4, unite: "pièce" }, { nom: "champignon de paris", quantite: 250, unite: "g" }, { nom: "lardons", quantite: 150, unite: "g" }, { nom: "oignon", quantite: 2, unite: "pièce" }, { nom: "vin rouge", quantite: 75, unite: "cl" }, { nom: "farine", quantite: 2, unite: "cuillère à soupe" }],
+  },
+  {
+    titre: "Falafels maison",
+    photo: "/recipes/falafels-maison.jpg",
+    temps_preparation: 40, difficulte: "moyen", prix_estime: 5,
+    description: "Boulettes de pois chiches épicées, croustillantes à l'extérieur, moelleuses à l'intérieur.",
+    calories: 380, proteines: 14, lipides: 16,
+    tags: ["végan", "économique"],
+    etapes: ["Mixer les pois chiches trempés (non cuits) avec oignon, ail, persil et épices.", "Former des boulettes et laisser reposer 30 min au frais.", "Faire frire ou cuire au four jusqu'à ce qu'elles soient dorées et croustillantes."],
+    ingredients: [{ nom: "pois chiches secs", quantite: 250, unite: "g" }, { nom: "oignon", quantite: 1, unite: "pièce" }, { nom: "ail", quantite: 2, unite: "pièce" }, { nom: "persil", quantite: 1, unite: "botte" }, { nom: "cumin", quantite: 1, unite: "cuillère à café" }, { nom: "coriandre en poudre", quantite: 1, unite: "cuillère à café" }],
+  },
+  {
+    titre: "Tiramisu",
+    photo: "/recipes/tiramisu.jpg",
+    temps_preparation: 30, difficulte: "facile", prix_estime: 6,
+    description: "Biscuits café, crème mascarpone légère et cacao amer.",
+    calories: 420, proteines: 7, lipides: 26,
+    tags: ["sucré"],
+    etapes: ["Séparer les blancs des jaunes d'œufs, fouetter les jaunes avec le sucre puis incorporer le mascarpone.", "Monter les blancs en neige et les incorporer délicatement.", "Tremper rapidement les biscuits dans le café et les disposer dans un plat, alterner avec la crème.", "Réserver au frais au moins 4h, saupoudrer de cacao avant de servir."],
+    ingredients: [{ nom: "biscuits cuillère", quantite: 24, unite: "pièce" }, { nom: "mascarpone", quantite: 250, unite: "g" }, { nom: "œuf", quantite: 3, unite: "pièce" }, { nom: "sucre", quantite: 80, unite: "g" }, { nom: "café fort", quantite: 25, unite: "cl" }, { nom: "cacao en poudre", quantite: 2, unite: "cuillère à soupe" }],
+  },
+  {
+    titre: "Buddha bowl saumon avocat",
+    photo: "/recipes/buddha-bowl-saumon-avocat.jpg",
+    temps_preparation: 25, difficulte: "facile", prix_estime: 10,
+    description: "Saumon mariné, avocat, edamame et riz vinaigré dans un bol coloré.",
+    calories: 540, proteines: 32, lipides: 26,
+    tags: ["riche en protéines", "sans gluten", "été"],
+    etapes: ["Cuire le riz et le vinaigrer légèrement.", "Mariner le saumon coupé en cubes avec sauce soja et sésame.", "Cuire les edamame quelques minutes à l'eau bouillante.", "Dresser le bol avec riz, saumon, avocat tranché et edamame."],
+    ingredients: [{ nom: "pavé de saumon", quantite: 300, unite: "g" }, { nom: "riz à sushi", quantite: 200, unite: "g" }, { nom: "avocat", quantite: 1, unite: "pièce" }, { nom: "edamame", quantite: 150, unite: "g" }, { nom: "sauce soja", quantite: 2, unite: "cuillère à soupe" }, { nom: "graines de sésame", quantite: 1, unite: "cuillère à soupe" }],
+  },
 ];
 
 function buildSeedData() {
@@ -264,8 +354,9 @@ function buildSeedData() {
     tags,
     weeklyPlan: [], // { id, date: "AAAA-MM-JJ", recipe_id }
     shoppingList: [], // { id, ingredient_id, quantite_totale, unite, coche, source: "plan" | "manuel" }
-    userProfile: { tags_preferences: [], compte: { nom: "", email: "" } },
+    userProfile: { tags_preferences: [], aliments_exclus: [], compte: { nom: "", email: "" } },
     swipeDeckSeenIds: [],
+    essentials: ESSENTIAL_SEED.map((nom) => ({ id: uid("ess"), nom })),
   };
 }
 
@@ -394,7 +485,9 @@ function migrateWeeklyPlan(d) {
     return p.moment ? p : { ...p, moment: "midi" };
   });
   if (!d.userProfile.compte) d.userProfile.compte = { nom: "", email: "" };
+  if (!d.userProfile.aliments_exclus) d.userProfile.aliments_exclus = [];
   d.shoppingList = (d.shoppingList || []).map((s) => s.source ? s : { ...s, source: "plan" });
+  if (!d.essentials) d.essentials = ESSENTIAL_SEED.map((nom) => ({ id: uid("ess"), nom }));
   return d;
 }
 
@@ -649,6 +742,13 @@ const STYLE = `
   .mp-tip-title { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 600; margin: 0 0 4px; }
   .mp-tip-body { font-size: 13px; opacity: .92; line-height: 1.4; }
 
+  .mp-segmented { display: inline-flex; background: var(--surface-2); border-radius: 999px; padding: 3px; gap: 2px; }
+  .mp-segmented button {
+    border: none; background: transparent; padding: 7px 18px; border-radius: 999px;
+    font-size: 13px; font-weight: 600; color: var(--ink-soft); cursor: pointer; font-family: inherit;
+    transition: background .15s ease, color .15s ease;
+  }
+  .mp-segmented button.active { background: #fff; color: var(--ink); box-shadow: 0 1px 4px rgba(42,32,21,.1); }
   .mp-day-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
   .mp-day-chip {
     flex-shrink: 0; width: 52px; padding: 10px 0; border-radius: 16px; background: var(--surface);
@@ -656,7 +756,7 @@ const STYLE = `
     cursor: pointer; color: var(--ink-soft);
   }
   .mp-day-chip .mp-day-num { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 600; color: var(--ink); }
-  .mp-day-chip.selected { background: var(--ink); border-color: var(--ink); }
+  .mp-day-chip.selected { background: var(--sage); border-color: var(--sage); }
   .mp-day-chip.selected .mp-day-num { color: #fff; }
   .mp-day-chip.selected .mp-day-name { color: #fff; }
   .mp-day-name { font-size: 10.5px; text-transform: capitalize; }
@@ -797,12 +897,14 @@ function RecipeThumb({ recipe, className, style }) {
    et les saisies en cours survivent aux mises à jour de données)
 ---------------------------------------------------------------------- */
 
-function CreateScreen({ data, update }) {
+function CreateScreen({ data, update, setRecipeModal }) {
   const emptyForm = { titre: "", photo: null, temps: "30 min", portions: 4, ingredientsText: "", etapesText: "", difficulte: "", prix_estime: "", calories: "", proteines: "", lipides: "", tag_ids: [] };
   const [form, setForm] = useState(emptyForm);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [showMyRecipes, setShowMyRecipes] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
   const fileInputRef = useRef(null);
+  const myRecipes = data.recipes.filter((r) => r.origine === "utilisateur");
 
   // Import d'un fichier local : redimensionné et compressé en JPEG avant stockage.
   const handleFileSelect = (e) => {
@@ -861,10 +963,49 @@ function CreateScreen({ data, update }) {
           <div className="mp-eyebrow">Votre nouvelle recette</div>
           <h1 className="mp-serif mp-title">Créer</h1>
         </div>
-        <div className="mp-round-btn" style={{ width: 38, height: 38, background: "var(--surface-2)", color: "var(--terracotta)", cursor: "default" }} title="Assistant IA (bientôt)">
-          <Sparkles size={17} />
+        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          {myRecipes.length > 0 && (
+            <button className="mp-round-btn" style={{ width: 38, height: 38 }} onClick={() => setShowMyRecipes(true)} title="Mes créations">
+              <BookOpen size={16} />
+            </button>
+          )}
+          <div className="mp-round-btn" style={{ width: 38, height: 38, background: "var(--surface-2)", color: "var(--terracotta)", cursor: "default" }} title="Assistant IA (bientôt)">
+            <Sparkles size={17} />
+          </div>
         </div>
       </div>
+
+      {showMyRecipes && (
+        <Modal onClose={() => setShowMyRecipes(false)}>
+          <div className="mp-modal-head">
+            <div>
+              <div className="mp-eyebrow">{myRecipes.length} recette{myRecipes.length !== 1 ? "s" : ""}</div>
+              <h2 className="mp-serif" style={{ fontSize: 20, margin: 0 }}>Mes créations</h2>
+            </div>
+            <button className="mp-round-btn" style={{ width: 34, height: 34 }} onClick={() => setShowMyRecipes(false)}><X size={16} /></button>
+          </div>
+          {myRecipes.length === 0 ? (
+            <EmptyState icon={<Pencil size={32} />} title="Pas encore de création" body="Les recettes que tu crées apparaîtront ici." />
+          ) : (
+            <div className="mp-grid">
+              {myRecipes.map((r) => (
+                <div key={r.id} className="mp-rcard" onClick={() => { setShowMyRecipes(false); setRecipeModal(r.id); }}>
+                  <RecipeThumb recipe={r} className="mp-rcard-photo" />
+                  <div className="mp-rcard-body">
+                    <p className="mp-rcard-title">{r.titre}</p>
+                    <div className="mp-rcard-meta">{[r.temps_preparation ? `${r.temps_preparation} min` : null, r.difficulte].filter(Boolean).join(" · ")}</div>
+                  </div>
+                  {r.liked && (
+                    <span style={{ position: "absolute", top: 8, right: 8, width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Heart size={11} color="var(--sage-deep)" fill="var(--sage-deep)" />
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </Modal>
+      )}
 
       <div className="mp-field">
         <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileSelect} />
@@ -970,6 +1111,7 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
   const top = deckRecipes[0];
   const [drag, setDrag] = useState({ x: 0, active: false });
   const [lastPassedId, setLastPassedId] = useState(null);
+  const [showSearch, setShowSearch] = useState(false);
   const startX = useRef(0);
 
   useEffect(() => {
@@ -1012,14 +1154,20 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
           <div className="mp-eyebrow">{data.recipes.length} recettes à découvrir</div>
           <h1 className="mp-serif mp-title">Swipe</h1>
         </div>
-        {profileTagIds.length > 0 && (
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          {profileTagIds.length > 0 && (
             <TagPill onClick={() => setUseProfileFilter((v) => !v)} selected={useProfileFilter}>
               Filtrer selon mon profil
             </TagPill>
-          </div>
-        )}
+          )}
+          <button className="mp-round-btn" style={{ width: 34, height: 34 }} onClick={() => setShowSearch(true)} aria-label="Rechercher une recette"><Search size={15} /></button>
+        </div>
       </div>
+
+      {showSearch && (
+        <RecipeSearchModal data={data} onClose={() => setShowSearch(false)}
+          onPick={(id) => { setShowSearch(false); setRecipeModal(id); }} />
+      )}
 
       {!useProfileFilter && (
         <div className="mp-scroll-x" style={{ marginBottom: 8, flexShrink: 0 }}>
@@ -1281,7 +1429,7 @@ const MOMENT_LABEL = { midi: "Déjeuner", soir: "Dîner" };
 function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, clearWeek, generateShoppingList, setRecipeModal }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [picker, setPicker] = useState(null); // { dateISO, dayIdx, moment } | null
-  const [viewMode, setViewMode] = useState("jour"); // "jour" | "semaine"
+  const [viewMode, setViewMode] = useState("semaine"); // "jour" | "semaine"
 
   const monday = mondayOf(addDays(todayDate(), weekOffset * 7));
   const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
@@ -1307,21 +1455,21 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, clearWe
 
   return (
     <div>
-      <div className="mp-header" style={{ alignItems: "flex-start" }}>
-        <div>
-          <div className="mp-eyebrow">{weekLabelPrefix}</div>
-          <h1 className="mp-serif mp-title">Planning</h1>
-        </div>
-        <div style={{ display: "flex", gap: 6 }}>
-          <button className="mp-round-btn" style={{ width: 34, height: 34 }} onClick={() => setWeekOffset((o) => o - 1)}><ChevronLeft size={15} /></button>
-          <button className="mp-round-btn" style={{ width: 34, height: 34 }} onClick={() => setWeekOffset((o) => o + 1)}><ChevronRight size={15} /></button>
-          <button className="mp-round-btn" style={{ width: 34, height: 34 }} onClick={() => clearWeek(weekDatesISO)} aria-label="Vider la semaine" disabled={weekPlanCount === 0}><Trash2 size={14} /></button>
-        </div>
+      <div className="mp-header" style={{ marginBottom: 14 }}>
+        <h1 className="mp-serif mp-title">Planning</h1>
+        <button className="mp-round-btn" style={{ width: 34, height: 34 }} onClick={() => clearWeek(weekDatesISO)} aria-label="Vider la semaine" disabled={weekPlanCount === 0}><Trash2 size={14} /></button>
       </div>
 
-      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-        <TagPill tone="sage" selected={viewMode === "jour"} onClick={() => setViewMode("jour")}>Jour</TagPill>
-        <TagPill tone="sage" selected={viewMode === "semaine"} onClick={() => setViewMode("semaine")}>Semaine</TagPill>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+        <div className="mp-segmented">
+          <button className={viewMode === "jour" ? "active" : ""} onClick={() => setViewMode("jour")}>Jour</button>
+          <button className={viewMode === "semaine" ? "active" : ""} onClick={() => setViewMode("semaine")}>Semaine</button>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <button className="mp-round-btn" style={{ width: 28, height: 28 }} onClick={() => setWeekOffset((o) => o - 1)} aria-label="Semaine précédente"><ChevronLeft size={14} /></button>
+          <span style={{ fontSize: 12, color: "var(--ink-soft)", minWidth: 74, textAlign: "center" }}>{weekLabelPrefix}</span>
+          <button className="mp-round-btn" style={{ width: 28, height: 28 }} onClick={() => setWeekOffset((o) => o + 1)} aria-label="Semaine suivante"><ChevronRight size={14} /></button>
+        </div>
       </div>
 
       {viewMode === "jour" ? (
@@ -1487,9 +1635,17 @@ function AddShoppingItemModal({ data, onClose, onAdd }) {
   );
 }
 
-function ShoppingScreen({ data, generateShoppingList, toggleShoppingItem, clearShoppingList, addManualShoppingItem, removeShoppingItem, goToPlanning }) {
+function ShoppingScreen({ data, generateShoppingList, toggleShoppingItem, clearShoppingList, addManualShoppingItem, removeShoppingItem, goToPlanning, addEssential, removeEssential, addEssentialToCart }) {
   const [weekStart, setWeekStart] = useState(() => isoDate(mondayOf(todayDate())));
   const [showAddItem, setShowAddItem] = useState(false);
+  const [manageEssentials, setManageEssentials] = useState(false);
+  const [newEssential, setNewEssential] = useState("");
+  const [expandedIds, setExpandedIds] = useState(() => new Set());
+  const toggleExpanded = (id) => setExpandedIds((prev) => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
   const weekStartDate = parseISO(weekStart);
   const weekEndDate = addDays(weekStartDate, 6);
   const weekPlanItemsInRange = data.weeklyPlan.filter((p) => { const pd = parseISO(p.date); return pd >= weekStartDate && pd <= weekEndDate; });
@@ -1520,6 +1676,36 @@ function ShoppingScreen({ data, generateShoppingList, toggleShoppingItem, clearS
         {data.shoppingList.length > 0 && <button className="mp-btn mp-btn-ghost" onClick={clearShoppingList}><Trash2 size={14} /> Vider</button>}
       </div>
       {showAddItem && <AddShoppingItemModal data={data} onClose={() => setShowAddItem(false)} onAdd={addManualShoppingItem} />}
+
+      <div className="mp-card" style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <div className="mp-serif" style={{ fontSize: 15, fontWeight: 600 }}>Essentiels du quotidien</div>
+          <button className="mp-round-btn" style={{ width: 30, height: 30 }} onClick={() => setManageEssentials((s) => !s)} aria-label="Gérer les essentiels">
+            {manageEssentials ? <Check size={14} /> : <SlidersHorizontal size={13} />}
+          </button>
+        </div>
+        <div style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>
+          Note ici ce qui te manque à la maison (dentifrice, lessive, litière…) et pioche-le d'un tap quand tu fais les courses.
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+          {data.essentials.map((e) => (
+            <span key={e.id} className="mp-tag clickable" style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+              onClick={() => (manageEssentials ? removeEssential(e.id) : addEssentialToCart(e))}>
+              {e.nom} {manageEssentials ? <X size={11} /> : <Plus size={11} />}
+            </span>
+          ))}
+          {data.essentials.length === 0 && <span style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>Aucun essentiel pour l'instant.</span>}
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <input className="mp-input" placeholder="Ex. Papier toilette" value={newEssential}
+            onChange={(e) => setNewEssential(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && newEssential.trim()) { addEssential(newEssential.trim()); setNewEssential(""); } }} />
+          <button className="mp-btn mp-btn-ghost" disabled={!newEssential.trim()}
+            onClick={() => { if (newEssential.trim()) { addEssential(newEssential.trim()); setNewEssential(""); } }}>
+            <Plus size={14} />
+          </button>
+        </div>
+      </div>
 
       {generatedFromPlan && weekPlanRecipes.length > 0 && (
         <div className="mp-card" style={{ marginBottom: 16 }}>
@@ -1571,7 +1757,7 @@ function ShoppingScreen({ data, generateShoppingList, toggleShoppingItem, clearS
           <ShoppingCart size={26} style={{ opacity: 0.4, marginBottom: 10 }} />
           <div className="mp-serif" style={{ fontSize: 16, color: "var(--ink)", marginBottom: 4 }}>Panier vide</div>
           <div style={{ fontSize: 13, lineHeight: 1.5 }}>
-            {weekPlanCount === 0 ? "Planifie des recettes sur cette semaine, ou ajoute un article directement." : "Clique sur « Générer depuis cette semaine » pour construire ta liste."}
+            {weekPlanCount === 0 ? "Planifie des recettes sur cette semaine, pioche dans tes essentiels ci-dessus, ou ajoute un article directement." : "Clique sur « Générer depuis cette semaine » pour construire ta liste."}
           </div>
         </div>
       ) : (
@@ -1583,17 +1769,32 @@ function ShoppingScreen({ data, generateShoppingList, toggleShoppingItem, clearS
             <div className="mp-card" style={{ padding: 0 }}>
               {grouped[cat]
                 .sort((a, b) => ingredientName(data, a.ingredient_id).localeCompare(ingredientName(data, b.ingredient_id)))
-                .map((s) => (
-                  <div key={s.id} className="mp-shop-item">
-                    <div className={`mp-shop-check-round ${s.coche ? "checked" : ""}`} onClick={() => toggleShoppingItem(s.id)}>
-                      {s.coche && <Check size={13} />}
+                .map((s) => {
+                  const recetteNoms = (s.recette_ids || []).map((rid) => data.recipes.find((r) => r.id === rid)?.titre).filter(Boolean);
+                  const expanded = expandedIds.has(s.id);
+                  return (
+                    <div key={s.id}>
+                      <div className="mp-shop-item">
+                        <div className={`mp-shop-check-round ${s.coche ? "checked" : ""}`} onClick={() => toggleShoppingItem(s.id)}>
+                          {s.coche && <Check size={13} />}
+                        </div>
+                        <span className={`mp-shop-name ${s.coche ? "checked" : ""}`}>
+                          {s.quantite_totale ? `${s.quantite_totale}${s.unite ? ` ${s.unite}` : ""} ` : ""}{ingredientName(data, s.ingredient_id)}
+                        </span>
+                        {recetteNoms.length > 0 && (
+                          <Info size={14} style={{ cursor: "pointer", color: expanded ? "var(--sage-deep)" : "var(--ink-faint)", flexShrink: 0 }}
+                            onClick={() => toggleExpanded(s.id)} aria-label="Voir les recettes liées" />
+                        )}
+                        <Minus size={14} style={{ cursor: "pointer", color: "var(--ink-faint)", flexShrink: 0 }} onClick={() => removeShoppingItem(s.id)} />
+                      </div>
+                      {expanded && recetteNoms.length > 0 && (
+                        <div style={{ padding: "0 12px 10px 46px", fontSize: 12, color: "var(--ink-soft)" }}>
+                          Utilisé dans : {recetteNoms.join(", ")}
+                        </div>
+                      )}
                     </div>
-                    <span className={`mp-shop-name ${s.coche ? "checked" : ""}`}>
-                      {s.quantite_totale ? `${s.quantite_totale}${s.unite ? ` ${s.unite}` : ""} ` : ""}{ingredientName(data, s.ingredient_id)}
-                    </span>
-                    <Minus size={14} style={{ cursor: "pointer", color: "var(--ink-faint)", flexShrink: 0 }} onClick={() => removeShoppingItem(s.id)} />
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           </div>
         ))
@@ -1612,9 +1813,11 @@ const PROFILE_TABS = [
   { id: "parametres", label: "Paramètres" },
 ];
 
-function ProfileScreen({ data, update }) {
+function ProfileScreen({ data, update, toggleAlimentExclu }) {
   const [tab, setTab] = useState("regime");
+  const [newExclu, setNewExclu] = useState("");
   const compte = data.userProfile.compte || { nom: "", email: "" };
+  const alimentsExclus = data.userProfile.aliments_exclus || [];
 
   const toggleTag = (tagId) => {
     update((d) => {
@@ -1654,12 +1857,36 @@ function ProfileScreen({ data, update }) {
       </div>
 
       {tab === "regime" && (
-        <div className="mp-card" style={{ maxWidth: 480 }}>
-          <div className="mp-label" style={{ marginBottom: 10 }}>Préférences de régime</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-            {data.tags.map((t) => (
-              <TagPill key={t.id} selected={data.userProfile.tags_preferences.includes(t.id)} onClick={() => toggleTag(t.id)}>{t.nom}</TagPill>
-            ))}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 480 }}>
+          <div className="mp-card">
+            <div className="mp-label" style={{ marginBottom: 10 }}>Préférences de régime</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+              {data.tags.map((t) => (
+                <TagPill key={t.id} selected={data.userProfile.tags_preferences.includes(t.id)} onClick={() => toggleTag(t.id)}>{t.nom}</TagPill>
+              ))}
+            </div>
+          </div>
+
+          <div className="mp-card">
+            <div className="mp-label" style={{ marginBottom: 6 }}>Aliments à éviter</div>
+            <div style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>
+              Les recettes contenant l'un de ces ingrédients seront écartées du Swipe.
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 10 }}>
+              {alimentsExclus.map((nom) => (
+                <TagPill key={nom} selected onClick={() => toggleAlimentExclu(nom)}>{capitalize(nom)} <X size={11} /></TagPill>
+              ))}
+              {alimentsExclus.length === 0 && <span style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>Aucun aliment exclu.</span>}
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input className="mp-input" placeholder="Ex. coriandre, champignons…" value={newExclu}
+                onChange={(e) => setNewExclu(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && newExclu.trim()) { toggleAlimentExclu(newExclu.trim()); setNewExclu(""); } }} />
+              <button className="mp-btn mp-btn-ghost" disabled={!newExclu.trim()}
+                onClick={() => { if (newExclu.trim()) { toggleAlimentExclu(newExclu.trim()); setNewExclu(""); } }}>
+                <Plus size={14} />
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1765,6 +1992,49 @@ function ParametresPanel({ data, update }) {
   );
 }
 
+/* ---------- Recherche de recettes ---------- */
+
+function RecipeSearchModal({ data, onClose, onPick }) {
+  const [query, setQuery] = useState("");
+  const q = normalizeName(query);
+  const results = q ? data.recipes.filter((r) => normalizeName(r.titre).includes(q)) : data.recipes;
+
+  return (
+    <Modal onClose={onClose}>
+      <div className="mp-modal-head">
+        <div>
+          <div className="mp-eyebrow">{data.recipes.length} recettes au total</div>
+          <h2 className="mp-serif" style={{ fontSize: 20, margin: 0 }}>Rechercher</h2>
+        </div>
+        <button className="mp-round-btn" style={{ width: 34, height: 34 }} onClick={onClose}><X size={16} /></button>
+      </div>
+      <div style={{ position: "relative", marginBottom: 16 }}>
+        <Search size={14} style={{ position: "absolute", left: 13, top: 13, color: "var(--ink-faint)" }} />
+        <input className="mp-input" style={{ paddingLeft: 34, borderRadius: 24 }} autoFocus
+          placeholder="Chercher une recette par nom…" value={query} onChange={(e) => setQuery(e.target.value)} />
+      </div>
+      {results.length === 0 ? (
+        <EmptyState icon={<Search size={32} />} title="Aucun résultat" body="Aucune recette ne correspond à cette recherche." />
+      ) : (
+        <div className="mp-grid">
+          {results.map((r) => (
+            <div key={r.id} className="mp-rcard" onClick={() => onPick(r.id)}>
+              <div style={{ position: "relative" }}>
+                <RecipeThumb recipe={r} className="mp-rcard-photo" />
+                {r.liked && <span className="mp-photo-like" style={{ top: 8, right: 8, width: 26, height: 26 }}><Heart size={12} fill="currentColor" /></span>}
+              </div>
+              <div className="mp-rcard-body">
+                <p className="mp-rcard-title">{r.titre}</p>
+                <div className="mp-rcard-meta">{[r.temps_preparation ? `${r.temps_preparation} min` : null, r.difficulte].filter(Boolean).join(" · ")}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Modal>
+  );
+}
+
 /* ---------- Détail recette (lecture seule) ---------- */
 
 function RecipeDetailModal({ recipeId, data, onClose, onEdit, toggleLike }) {
@@ -1816,6 +2086,17 @@ function RecipeDetailModal({ recipeId, data, onClose, onEdit, toggleLike }) {
       {r.tag_ids.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 }}>
           {r.tag_ids.map((tid) => <TagPill key={tid}>{tagName(data, tid)}</TagPill>)}
+        </div>
+      )}
+
+      {!r.calories && !r.proteines && !r.lipides && r.tag_ids.length === 0 && (
+        <div style={{ border: "1.5px dashed var(--line)", borderRadius: 16, padding: "14px 16px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.4 }}>
+            Envie d'enrichir cette recette avec des tags ou des infos nutritionnelles ?
+          </div>
+          <button className="mp-btn mp-btn-ghost" style={{ flexShrink: 0, padding: "6px 12px", fontSize: 12.5 }} onClick={() => onEdit(r.id)}>
+            <Pencil size={12} /> Compléter
+          </button>
         </div>
       )}
 
@@ -2075,12 +2356,47 @@ export default function MealPlannerApp() {
   const [data, setData] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [screen, setScreen] = useState("discover");
+  const swipeStartRef = useRef(null);
+  const NAV_ORDER = NAV_ITEMS.map((item) => item.id);
+  const isTabSwipeExcluded = (target) => target.closest && target.closest(".mp-overlay, .mp-swipe-card, .mp-scroll-x, .mp-day-strip, input, textarea, select");
+  const resolveTabSwipe = (dx, dy) => {
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const idx = NAV_ORDER.indexOf(screen);
+    if (idx === -1) return;
+    if (dx < 0 && idx < NAV_ORDER.length - 1) setScreen(NAV_ORDER[idx + 1]);
+    else if (dx > 0 && idx > 0) setScreen(NAV_ORDER[idx - 1]);
+  };
+  const onTabSwipeStart = (e) => {
+    if (isTabSwipeExcluded(e.target)) { swipeStartRef.current = null; return; }
+    const t = e.touches[0];
+    swipeStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const onTabSwipeEnd = (e) => {
+    if (!swipeStartRef.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - swipeStartRef.current.x;
+    const dy = t.clientY - swipeStartRef.current.y;
+    swipeStartRef.current = null;
+    resolveTabSwipe(dx, dy);
+  };
+  const onTabSwipeMouseDown = (e) => {
+    if (isTabSwipeExcluded(e.target)) { swipeStartRef.current = null; return; }
+    swipeStartRef.current = { x: e.clientX, y: e.clientY };
+  };
+  const onTabSwipeMouseUp = (e) => {
+    if (!swipeStartRef.current) return;
+    const dx = e.clientX - swipeStartRef.current.x;
+    const dy = e.clientY - swipeStartRef.current.y;
+    swipeStartRef.current = null;
+    resolveTabSwipe(dx, dy);
+  };
   const [recipeModal, setRecipeModal] = useState(null); // recipe id showing the read-only detail view
   const [editRecipeId, setEditRecipeId] = useState(null); // recipe id currently open in the edit form
   const [discoverFilterTags, setDiscoverFilterTags] = useState([]);
   const [useProfileFilter, setUseProfileFilter] = useState(true);
   const [likedSelection, setLikedSelection] = useState([]);
   const skipNextSave = useRef(true);
+  const shuffleOrderRef = useRef(null);
 
   // Chargement initial
   useEffect(() => {
@@ -2148,15 +2464,16 @@ export default function MealPlannerApp() {
         const recipe = d.recipes.find((r) => r.id === p.recipe_id);
         if (!recipe) return;
         recipe.ingredients.forEach((ri) => {
-          if (!totals[ri.ingredient_id]) totals[ri.ingredient_id] = { quantite: 0, unite: ri.unite };
+          if (!totals[ri.ingredient_id]) totals[ri.ingredient_id] = { quantite: 0, unite: ri.unite, recette_ids: new Set() };
           totals[ri.ingredient_id].quantite += Number(ri.quantite) || 0;
+          totals[ri.ingredient_id].recette_ids.add(recipe.id);
         });
       });
       const previousPlanItems = d.shoppingList.filter((s) => s.source === "plan");
       const prevChecked = Object.fromEntries(previousPlanItems.map((s) => [s.ingredient_id, s.coche]));
       const regenerated = Object.entries(totals).map(([ingredient_id, v]) => ({
         id: uid("shop"), ingredient_id, quantite_totale: v.quantite, unite: v.unite,
-        coche: prevChecked[ingredient_id] || false, source: "plan",
+        coche: prevChecked[ingredient_id] || false, source: "plan", recette_ids: [...v.recette_ids],
       }));
       // On ne remplace que la partie générée depuis le planning — les articles ajoutés
       // manuellement (produits non liés à une recette) restent intacts.
@@ -2193,7 +2510,43 @@ export default function MealPlannerApp() {
   const clearShoppingList = useCallback(() => update((d) => { d.shoppingList = []; return d; }), [update]);
   const markSeen = useCallback((recipeId) => update((d) => { d.swipeDeckSeenIds = [...(d.swipeDeckSeenIds || []), recipeId]; return d; }), [update]);
   const unmarkSeen = useCallback((recipeId) => update((d) => { d.swipeDeckSeenIds = (d.swipeDeckSeenIds || []).filter((x) => x !== recipeId); return d; }), [update]);
-  const resetDeck = useCallback(() => update((d) => { d.swipeDeckSeenIds = []; return d; }), [update]);
+  const resetDeck = useCallback(() => {
+    shuffleOrderRef.current = null;
+    update((d) => { d.swipeDeckSeenIds = []; return d; });
+  }, [update]);
+
+  // Essentiels : objets du quotidien (non alimentaires ou récurrents) qu'on veut noter
+  // dès qu'on y pense, pour les retrouver au moment de faire les courses.
+  const addEssential = useCallback((nom) => {
+    update((d) => {
+      const key = normalizeName(nom);
+      if (!d.essentials.some((e) => normalizeName(e.nom) === key)) {
+        d.essentials.push({ id: uid("ess"), nom: nom.trim() });
+      }
+      return d;
+    });
+  }, [update]);
+  const removeEssential = useCallback((id) => {
+    update((d) => { d.essentials = d.essentials.filter((e) => e.id !== id); return d; });
+  }, [update]);
+  const addEssentialToCart = useCallback((essential) => {
+    update((d) => {
+      const ing = getOrCreateIngredientByName(d, essential.nom, "");
+      const existing = d.shoppingList.find((s) => s.ingredient_id === ing.id && s.source === "manuel");
+      if (existing) { existing.quantite_totale += 1; }
+      else { d.shoppingList.push({ id: uid("shop"), ingredient_id: ing.id, quantite_totale: 1, unite: "", coche: false, source: "manuel" }); }
+      return d;
+    });
+  }, [update]);
+
+  const toggleAlimentExclu = useCallback((nom) => {
+    update((d) => {
+      const key = normalizeName(nom);
+      const list = d.userProfile.aliments_exclus || [];
+      d.userProfile.aliments_exclus = list.includes(key) ? list.filter((x) => x !== key) : [...list, key];
+      return d;
+    });
+  }, [update]);
 
   if (!loaded || !data) {
     return (
@@ -2211,19 +2564,28 @@ export default function MealPlannerApp() {
   const likedRecipes = data.recipes.filter((r) => r.liked);
   const profileTagIds = data.userProfile.tags_preferences;
   const activeFilterTags = useProfileFilter ? profileTagIds : discoverFilterTags;
-  const deckRecipes = data.recipes.filter((r) =>
-    !r.liked &&
-    !(data.swipeDeckSeenIds || []).includes(r.id) &&
-    (activeFilterTags.length === 0 || activeFilterTags.every((t) => r.tag_ids.includes(t)))
+  const alimentsExclus = data.userProfile.aliments_exclus || [];
+  const recipeContainsExcluded = (r) => alimentsExclus.some((ex) =>
+    r.ingredients.some((ri) => ingredientName(data, ri.ingredient_id).toLowerCase().includes(ex))
   );
+  const shuffleOrder = shuffleOrderRef.current || (shuffleOrderRef.current = shuffleArray(data.recipes.map((r) => r.id)));
+  const orderIndex = Object.fromEntries(shuffleOrder.map((id, i) => [id, i]));
+  const deckRecipes = data.recipes
+    .filter((r) =>
+      !r.liked &&
+      !(data.swipeDeckSeenIds || []).includes(r.id) &&
+      (activeFilterTags.length === 0 || activeFilterTags.every((t) => r.tag_ids.includes(t))) &&
+      !recipeContainsExcluded(r)
+    )
+    .sort((a, b) => (orderIndex[a.id] ?? 1e9) - (orderIndex[b.id] ?? 1e9));
 
   const screenProps = {
     discover: { data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, unmarkSeen, resetDeck, setRecipeModal, goToProfile: () => setScreen("profile") },
     liked: { data, likedRecipes, likedSelection, setLikedSelection, setRecipeModal, update },
     planning: { data, likedRecipes, addToPlan, removeFromPlan, clearWeek, generateShoppingList, setRecipeModal },
-    shopping: { data, generateShoppingList, toggleShoppingItem, clearShoppingList, addManualShoppingItem, removeShoppingItem, goToPlanning: () => setScreen("planning") },
-    create: { data, update },
-    profile: { data, update },
+    shopping: { data, generateShoppingList, toggleShoppingItem, clearShoppingList, addManualShoppingItem, removeShoppingItem, goToPlanning: () => setScreen("planning"), addEssential, removeEssential, addEssentialToCart },
+    create: { data, update, setRecipeModal },
+    profile: { data, update, toggleAlimentExclu },
   };
 
   const ScreenComponents = { discover: DiscoverScreen, liked: LikedScreen, planning: PlanningScreen, shopping: ShoppingScreen, create: CreateScreen, profile: ProfileScreen };
@@ -2234,7 +2596,8 @@ export default function MealPlannerApp() {
       <style>{STYLE}</style>
       <div className="mp-phone-shell">
         <div className="mp-root">
-          <main className="mp-main">
+          <main className="mp-main" onTouchStart={onTabSwipeStart} onTouchEnd={onTabSwipeEnd}
+            onMouseDown={onTabSwipeMouseDown} onMouseUp={onTabSwipeMouseUp}>
             <div className="mp-topbar">
               <button className={`mp-round-btn ${screen === "profile" ? "mp-profile-active" : ""}`} onClick={() => setScreen("profile")} aria-label="Profil">
                 {getInitials(data.userProfile.compte?.nom) ? (
