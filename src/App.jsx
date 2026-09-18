@@ -2646,7 +2646,7 @@ export default function MealPlannerApp() {
   useEffect(() => {
     const navEl = navRef.current;
     const iconEl = navIconRefs.current[screen];
-    if (navEl && iconEl && screen !== "discover") {
+    if (navEl && iconEl) {
       const navRect = navEl.getBoundingClientRect();
       const iconRect = iconEl.getBoundingClientRect();
       setNavIndicator({
