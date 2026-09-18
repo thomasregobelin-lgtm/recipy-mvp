@@ -784,21 +784,14 @@ const STYLE = `
   }
   .mp-nav-indicator-pos {
     position: absolute; left: 0; top: 0; width: 0; height: 0;
-    transition: transform .4s cubic-bezier(.34, 1.3, .64, 1), opacity .2s ease;
+    transition: transform .36s ease;
     pointer-events: none;
     z-index: 0;
   }
   .mp-nav-indicator-blob {
-    position: absolute; left: -18px; top: -18px; width: 36px; height: 36px; border-radius: 50%;
+    position: absolute; left: -21px; top: -38px; width: 42px; height: 38px;
+    border-radius: 21px 21px 8px 8px;
     background: var(--ink);
-    box-shadow: 0 4px 10px rgba(42, 32, 21, .3);
-    animation: mp-blob-pulse .4s cubic-bezier(.34, 1.3, .64, 1);
-  }
-  @keyframes mp-blob-pulse {
-    0% { transform: scale(1); }
-    35% { transform: scale(1.22, .82); }
-    65% { transform: scale(.93, 1.07); }
-    100% { transform: scale(1); }
   }
   .mp-nav-btn { position: relative; z-index: 1; }
   .mp-nav-brand { display: none; }
@@ -2651,7 +2644,7 @@ export default function MealPlannerApp() {
       const iconRect = iconEl.getBoundingClientRect();
       setNavIndicator({
         x: iconRect.left + iconRect.width / 2 - navRect.left,
-        y: iconRect.top + iconRect.height / 2 - navRect.top,
+        y: iconRect.bottom - navRect.top,
         visible: true,
       });
     } else {
@@ -2931,7 +2924,7 @@ export default function MealPlannerApp() {
               transform: `translate(${navIndicator.x}px, ${navIndicator.y}px)`,
               opacity: navIndicator.visible ? 1 : 0,
             }}>
-              <div key={screen} className="mp-nav-indicator-blob" />
+              <div className="mp-nav-indicator-blob" />
             </div>
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
