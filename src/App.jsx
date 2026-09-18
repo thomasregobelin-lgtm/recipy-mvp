@@ -784,13 +784,13 @@ const STYLE = `
   }
   .mp-nav-indicator-pos {
     position: absolute; left: 0; top: 0; width: 0; height: 0;
-    transition: transform .36s ease;
+    transition: transform .32s cubic-bezier(.22, 1, .36, 1);
     pointer-events: none;
     z-index: 0;
   }
   .mp-nav-indicator-blob {
-    position: absolute; left: -21px; top: -38px; width: 42px; height: 38px;
-    border-radius: 21px 21px 8px 8px;
+    position: absolute; left: -19px; top: -19px; width: 38px; height: 38px;
+    border-radius: 50%;
     background: var(--ink);
   }
   .mp-nav-btn { position: relative; z-index: 1; }
@@ -2644,7 +2644,7 @@ export default function MealPlannerApp() {
       const iconRect = iconEl.getBoundingClientRect();
       setNavIndicator({
         x: iconRect.left + iconRect.width / 2 - navRect.left,
-        y: iconRect.bottom - navRect.top,
+        y: iconRect.top + iconRect.height / 2 - navRect.top,
         visible: true,
       });
     } else {
