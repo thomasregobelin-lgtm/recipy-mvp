@@ -745,7 +745,9 @@ const STYLE = `
     flex-direction: column;
     position: relative;
   }
-  .mp-root * { box-sizing: border-box; }
+  .mp-root * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  .mp-root button, .mp-root a, .mp-root [role="button"] { -webkit-tap-highlight-color: transparent; outline: none; }
+  .mp-root button:focus:not(:focus-visible) { outline: none; }
   .mp-serif { font-family: 'Fraunces', serif; }
 
   /* Application mobile : on centre un cadre au format téléphone sur la page
@@ -807,8 +809,9 @@ const STYLE = `
   .mp-nav-btn.active { background: transparent; color: var(--sage); }
   .mp-nav-btn.active .mp-nav-icon-wrap { color: var(--sage); }
   .mp-nav-btn.center .mp-nav-icon-wrap {
-    width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: #fff;
+    width: 58px; height: 58px; border-radius: 50%; background: var(--ink); color: #fff;
     display: flex; align-items: center; justify-content: center; margin-bottom: 2px;
+    margin-top: -14px; box-shadow: 0 4px 12px rgba(42,32,21,.35);
     transition: transform .15s ease;
   }
   .mp-nav-btn.center { color: var(--ink); }
@@ -2835,7 +2838,7 @@ export default function MealPlannerApp() {
               const isCenter = item.id === "discover";
               return (
                 <button key={item.id} className={`mp-nav-btn ${isCenter ? "center" : ""} ${screen === item.id ? "active" : ""}`} onClick={() => setScreen(item.id)}>
-                  <span className="mp-nav-icon-wrap"><Icon size={isCenter ? 20 : 19} /></span>
+                  <span className="mp-nav-icon-wrap"><Icon size={isCenter ? 24 : 19} /></span>
                   {item.label}
                 </button>
               );
