@@ -780,7 +780,17 @@ const STYLE = `
     align-items: center;
     padding: 8px 4px calc(8px + env(safe-area-inset-bottom, 0px));
     gap: 2px;
+    position: relative;
   }
+  .mp-nav-indicator {
+    position: absolute; left: 0; top: 6px; height: 40px; border-radius: 16px;
+    background: var(--surface-2);
+    box-shadow: 0 6px 14px rgba(42, 32, 21, .14);
+    transition: transform .32s cubic-bezier(.22, 1, .36, 1), width .32s cubic-bezier(.22, 1, .36, 1), opacity .2s ease;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .mp-nav-btn { position: relative; z-index: 1; }
   .mp-nav-brand { display: none; }
   .mp-topbar {
     display: flex; justify-content: flex-end; margin-bottom: 8px; flex-shrink: 0;
@@ -2595,6 +2605,9 @@ export default function MealPlannerApp() {
   const [slide, setSlide] = useState(null); // { from, to, dir } | null
   const [slideSettled, setSlideSettled] = useState(false);
   const swipeStartRef = useRef(null);
+  const navRef = useRef(null);
+  const navBtnRefs = useRef({});
+  const [navIndicator, setNavIndicator] = useState({ left: 0, width: 0, visible: false });
   const NAV_ORDER = NAV_ITEMS.map((item) => item.id);
   const setScreen = (next) => {
     if (next === screen || slide) return;
@@ -2616,6 +2629,17 @@ export default function MealPlannerApp() {
     const t = setTimeout(() => { setSlide(null); setSlideSettled(false); }, 340);
     return () => { cancelAnimationFrame(raf1); clearTimeout(t); };
   }, [slide]);
+  useEffect(() => {
+    const navEl = navRef.current;
+    const btn = navBtnRefs.current[screen];
+    if (navEl && btn) {
+      const navRect = navEl.getBoundingClientRect();
+      const btnRect = btn.getBoundingClientRect();
+      setNavIndicator({ left: btnRect.left - navRect.left, width: btnRect.width, visible: screen !== "discover" });
+    } else {
+      setNavIndicator((s) => ({ ...s, visible: false }));
+    }
+  }, [screen]);
   const isTabSwipeExcluded = (target) => target.closest && target.closest(".mp-overlay, .mp-swipe-card, .mp-scroll-x, .mp-day-strip, input, textarea, select");
   const resolveTabSwipe = (dx, dy) => {
     if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
@@ -2884,12 +2908,17 @@ export default function MealPlannerApp() {
               )}
             </div>
           </main>
-          <nav className="mp-nav">
+          <nav className="mp-nav" ref={navRef}>
+            <div className="mp-nav-indicator" style={{
+              transform: `translateX(${navIndicator.left}px)`, width: navIndicator.width,
+              opacity: navIndicator.visible ? 1 : 0,
+            }} />
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isCenter = item.id === "discover";
               return (
-                <button key={item.id} className={`mp-nav-btn ${isCenter ? "center" : ""} ${screen === item.id ? "active" : ""}`} onClick={() => setScreen(item.id)}>
+                <button key={item.id} ref={(el) => (navBtnRefs.current[item.id] = el)}
+                  className={`mp-nav-btn ${isCenter ? "center" : ""} ${screen === item.id ? "active" : ""}`} onClick={() => setScreen(item.id)}>
                   <span className="mp-nav-icon-wrap"><Icon size={isCenter ? 24 : 19} /></span>
                   {item.label}
                 </button>
