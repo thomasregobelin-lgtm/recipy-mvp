@@ -782,13 +782,23 @@ const STYLE = `
     gap: 2px;
     position: relative;
   }
-  .mp-nav-indicator {
-    position: absolute; left: 0; top: 6px; height: 40px; border-radius: 16px;
-    background: var(--surface-2);
-    box-shadow: 0 6px 14px rgba(42, 32, 21, .14);
-    transition: transform .32s cubic-bezier(.22, 1, .36, 1), width .32s cubic-bezier(.22, 1, .36, 1), opacity .2s ease;
+  .mp-nav-indicator-pos {
+    position: absolute; left: 0; top: 0; width: 0; height: 0;
+    transition: transform .4s cubic-bezier(.34, 1.3, .64, 1), opacity .2s ease;
     pointer-events: none;
     z-index: 0;
+  }
+  .mp-nav-indicator-blob {
+    position: absolute; left: -18px; top: -18px; width: 36px; height: 36px; border-radius: 50%;
+    background: var(--ink);
+    box-shadow: 0 4px 10px rgba(42, 32, 21, .3);
+    animation: mp-blob-pulse .4s cubic-bezier(.34, 1.3, .64, 1);
+  }
+  @keyframes mp-blob-pulse {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.22, .82); }
+    65% { transform: scale(.93, 1.07); }
+    100% { transform: scale(1); }
   }
   .mp-nav-btn { position: relative; z-index: 1; }
   .mp-nav-brand { display: none; }
@@ -815,10 +825,14 @@ const STYLE = `
     border-radius: 10px;
     transition: background .15s ease, color .15s ease;
   }
-  .mp-nav-icon-wrap { display: flex; align-items: center; justify-content: center; }
+  .mp-nav-icon-wrap {
+    width: 36px; height: 36px; border-radius: 50%; position: relative; z-index: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: color .3s ease;
+  }
   .mp-nav-btn:hover { background: var(--surface-2); color: var(--ink); }
   .mp-nav-btn.active { background: transparent; color: var(--sage); }
-  .mp-nav-btn.active .mp-nav-icon-wrap { color: var(--sage); }
+  .mp-nav-btn.active .mp-nav-icon-wrap { color: #fff; }
   .mp-nav-btn.center .mp-nav-icon-wrap {
     width: 58px; height: 58px; border-radius: 50%; background: var(--ink); color: #fff;
     display: flex; align-items: center; justify-content: center; margin-bottom: 2px;
@@ -2606,8 +2620,8 @@ export default function MealPlannerApp() {
   const [slideSettled, setSlideSettled] = useState(false);
   const swipeStartRef = useRef(null);
   const navRef = useRef(null);
-  const navBtnRefs = useRef({});
-  const [navIndicator, setNavIndicator] = useState({ left: 0, width: 0, visible: false });
+  const navIconRefs = useRef({});
+  const [navIndicator, setNavIndicator] = useState({ x: 0, y: 0, visible: false });
   const NAV_ORDER = NAV_ITEMS.map((item) => item.id);
   const setScreen = (next) => {
     if (next === screen || slide) return;
@@ -2631,11 +2645,15 @@ export default function MealPlannerApp() {
   }, [slide]);
   useEffect(() => {
     const navEl = navRef.current;
-    const btn = navBtnRefs.current[screen];
-    if (navEl && btn) {
+    const iconEl = navIconRefs.current[screen];
+    if (navEl && iconEl && screen !== "discover") {
       const navRect = navEl.getBoundingClientRect();
-      const btnRect = btn.getBoundingClientRect();
-      setNavIndicator({ left: btnRect.left - navRect.left, width: btnRect.width, visible: screen !== "discover" });
+      const iconRect = iconEl.getBoundingClientRect();
+      setNavIndicator({
+        x: iconRect.left + iconRect.width / 2 - navRect.left,
+        y: iconRect.top + iconRect.height / 2 - navRect.top,
+        visible: true,
+      });
     } else {
       setNavIndicator((s) => ({ ...s, visible: false }));
     }
@@ -2909,17 +2927,19 @@ export default function MealPlannerApp() {
             </div>
           </main>
           <nav className="mp-nav" ref={navRef}>
-            <div className="mp-nav-indicator" style={{
-              transform: `translateX(${navIndicator.left}px)`, width: navIndicator.width,
+            <div className="mp-nav-indicator-pos" style={{
+              transform: `translate(${navIndicator.x}px, ${navIndicator.y}px)`,
               opacity: navIndicator.visible ? 1 : 0,
-            }} />
+            }}>
+              <div key={screen} className="mp-nav-indicator-blob" />
+            </div>
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isCenter = item.id === "discover";
               return (
-                <button key={item.id} ref={(el) => (navBtnRefs.current[item.id] = el)}
+                <button key={item.id}
                   className={`mp-nav-btn ${isCenter ? "center" : ""} ${screen === item.id ? "active" : ""}`} onClick={() => setScreen(item.id)}>
-                  <span className="mp-nav-icon-wrap"><Icon size={isCenter ? 24 : 19} /></span>
+                  <span className="mp-nav-icon-wrap" ref={(el) => (navIconRefs.current[item.id] = el)}><Icon size={isCenter ? 24 : 19} /></span>
                   {item.label}
                 </button>
               );
