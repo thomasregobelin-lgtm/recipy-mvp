@@ -1486,9 +1486,9 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
 
         {top && (
           <div className="mp-deck-actions" style={{ flexShrink: 0 }}>
-            <button className="mp-round-btn like" onClick={() => resolveSwipe("like")} aria-label="J'aime"><Heart size={20} fill="currentColor" /></button>
-            <button className="mp-round-btn info" onClick={() => setRecipeModal(top.id)} aria-label="Plus d'informations"><Info size={17} /></button>
             <button className="mp-round-btn pass" onClick={() => resolveSwipe("pass")} aria-label="Passer"><X size={20} /></button>
+            <button className="mp-round-btn info" onClick={() => setRecipeModal(top.id)} aria-label="Plus d'informations"><Info size={17} /></button>
+            <button className="mp-round-btn like" onClick={() => resolveSwipe("like")} aria-label="J'aime"><Heart size={20} fill="currentColor" /></button>
           </div>
         )}
       </div>
