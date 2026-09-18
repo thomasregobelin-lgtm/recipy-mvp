@@ -784,6 +784,7 @@ const STYLE = `
   .mp-nav-brand { display: none; }
   .mp-topbar {
     display: flex; justify-content: flex-end; margin-bottom: 8px; flex-shrink: 0;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) 0 calc(16px + env(safe-area-inset-left, 0px));
   }
   .mp-profile-active {
     background: var(--terracotta); border-color: var(--terracotta); color: #fff;
@@ -823,10 +824,7 @@ const STYLE = `
     min-width: 0;
     min-height: 0;
     order: 1;
-    padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) 18px calc(16px + env(safe-area-inset-left, 0px));
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
   }
@@ -1059,11 +1057,18 @@ const STYLE = `
 
   .mp-scroll-x { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
 
-  ::-webkit-scrollbar { width: 9px; height: 9px; }
-  ::-webkit-scrollbar-thumb { background: var(--ink-faint); border-radius: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
+  .mp-root * { scrollbar-width: none; -ms-overflow-style: none; }
+  .mp-root *::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
-  .mp-topbar { margin-bottom: 4px; }
+  .mp-slide-track { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+  .mp-slide-pane {
+    position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 calc(16px + env(safe-area-inset-right, 0px)) 18px calc(16px + env(safe-area-inset-left, 0px));
+    transition: transform .32s cubic-bezier(.22, 1, .36, 1);
+    will-change: transform;
+    display: flex; flex-direction: column;
+  }
 `;
 
 
@@ -1496,7 +1501,7 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
   );
 }
 
-function LikedScreen({ data, likedRecipes, likedSelection, setLikedSelection, setRecipeModal, update }) {
+function LikedScreen({ data, likedRecipes, likedSelection, setLikedSelection, setRecipeModal, update, goToDiscover }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("toutes"); // "toutes" | "express" | "vege"
   const [selectMode, setSelectMode] = useState(false);
@@ -1544,25 +1549,33 @@ function LikedScreen({ data, likedRecipes, likedSelection, setLikedSelection, se
         </div>
       )}
 
-      {likedRecipes.length > 0 && (
-        <>
-          <div style={{ position: "relative", marginBottom: 12 }}>
-            <Search size={14} style={{ position: "absolute", left: 13, top: 12, color: "var(--ink-faint)" }} />
-            <input className="mp-input" style={{ paddingLeft: 34, borderRadius: 24 }} placeholder="Chercher une recette" value={query} onChange={(e) => setQuery(e.target.value)} />
-          </div>
-          <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
-            <TagPill tone="sage" selected={filter === "toutes"} onClick={() => setFilter("toutes")}>Toutes</TagPill>
-            <TagPill tone="sage" selected={filter === "express"} onClick={() => setFilter("express")}>Express</TagPill>
-            {vegeTag && <TagPill tone="sage" selected={filter === "vege"} onClick={() => setFilter("vege")}>Végé</TagPill>}
-          </div>
-        </>
-      )}
+      <div style={{ position: "relative", marginBottom: 12 }}>
+        <Search size={14} style={{ position: "absolute", left: 13, top: 12, color: "var(--ink-faint)" }} />
+        <input className="mp-input" style={{ paddingLeft: 34, borderRadius: 24 }} placeholder="Chercher une recette" value={query} onChange={(e) => setQuery(e.target.value)} />
+      </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
+        <TagPill tone="sage" selected={filter === "toutes"} onClick={() => setFilter("toutes")}>Toutes</TagPill>
+        <TagPill tone="sage" selected={filter === "express"} onClick={() => setFilter("express")}>Express</TagPill>
+        {vegeTag && <TagPill tone="sage" selected={filter === "vege"} onClick={() => setFilter("vege")}>Végé</TagPill>}
+      </div>
 
       {likedRecipes.length === 0 ? (
-        <div className="mp-card" style={{ textAlign: "center", padding: "34px 20px", color: "var(--ink-soft)" }}>
-          <Heart size={26} style={{ opacity: 0.4, marginBottom: 10 }} />
-          <div className="mp-serif" style={{ fontSize: 16, color: "var(--ink)", marginBottom: 4 }}>Aucune recette likée</div>
-          <div style={{ fontSize: 13, lineHeight: 1.5 }}>Va faire un tour dans Swipe pour liker des recettes, qu'elles viennent du catalogue ou que tu les aies créées toi-même.</div>
+        <div className="mp-card" style={{ textAlign: "center", padding: "38px 20px" }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: "50%", margin: "0 auto 14px",
+            background: "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Heart size={24} color="var(--terracotta)" />
+          </div>
+          <div className="mp-serif" style={{ fontSize: 17, color: "var(--ink)", marginBottom: 6 }}>Aucune recette likée</div>
+          <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink-soft)", marginBottom: goToDiscover ? 18 : 0 }}>
+            Va faire un tour dans Swipe pour liker des recettes, qu'elles viennent du catalogue ou que tu les aies créées toi-même.
+          </div>
+          {goToDiscover && (
+            <button className="mp-btn mp-btn-coral" style={{ margin: "0 auto" }} onClick={goToDiscover}>
+              <Sparkles size={14} /> Découvrir des recettes
+            </button>
+          )}
         </div>
       ) : visible.length === 0 ? (
         <div className="mp-card" style={{ textAlign: "center", padding: "34px 20px", color: "var(--ink-soft)" }}>
@@ -2578,9 +2591,31 @@ const NAV_ITEMS = [
 export default function MealPlannerApp() {
   const [data, setData] = useState(null);
   const [loaded, setLoaded] = useState(false);
-  const [screen, setScreen] = useState("discover");
+  const [screen, setScreenState] = useState("discover");
+  const [slide, setSlide] = useState(null); // { from, to, dir } | null
+  const [slideSettled, setSlideSettled] = useState(false);
   const swipeStartRef = useRef(null);
   const NAV_ORDER = NAV_ITEMS.map((item) => item.id);
+  const setScreen = (next) => {
+    if (next === screen || slide) return;
+    const oldIdx = NAV_ORDER.indexOf(screen);
+    const newIdx = NAV_ORDER.indexOf(next);
+    let dir = 1;
+    if (oldIdx !== -1 && newIdx !== -1) dir = newIdx > oldIdx ? 1 : -1;
+    else if (next === "profile") dir = 1;
+    else if (screen === "profile") dir = -1;
+    setSlide({ from: screen, to: next, dir });
+    setScreenState(next);
+  };
+  useEffect(() => {
+    if (!slide) return;
+    setSlideSettled(false);
+    const raf1 = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setSlideSettled(true));
+    });
+    const t = setTimeout(() => { setSlide(null); setSlideSettled(false); }, 340);
+    return () => { cancelAnimationFrame(raf1); clearTimeout(t); };
+  }, [slide]);
   const isTabSwipeExcluded = (target) => target.closest && target.closest(".mp-overlay, .mp-swipe-card, .mp-scroll-x, .mp-day-strip, input, textarea, select");
   const resolveTabSwipe = (dx, dy) => {
     if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
@@ -2804,7 +2839,7 @@ export default function MealPlannerApp() {
 
   const screenProps = {
     discover: { data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, unmarkSeen, resetDeck, setRecipeModal, goToProfile: () => setScreen("profile") },
-    liked: { data, likedRecipes, likedSelection, setLikedSelection, setRecipeModal, update },
+    liked: { data, likedRecipes, likedSelection, setLikedSelection, setRecipeModal, update, goToDiscover: () => setScreen("discover") },
     planning: { data, likedRecipes, addToPlan, removeFromPlan, clearWeek, generateShoppingList, setRecipeModal },
     shopping: { data, generateShoppingList, toggleShoppingItem, clearShoppingList, addManualShoppingItem, removeShoppingItem, goToPlanning: () => setScreen("planning"), addEssential, removeEssential, addEssentialToCart },
     create: { data, update, setRecipeModal },
@@ -2813,6 +2848,8 @@ export default function MealPlannerApp() {
 
   const ScreenComponents = { discover: DiscoverScreen, liked: LikedScreen, planning: PlanningScreen, shopping: ShoppingScreen, create: CreateScreen, profile: ProfileScreen };
   const ActiveScreen = ScreenComponents[screen];
+  const FromScreen = slide ? ScreenComponents[slide.from] : null;
+  const ToScreen = slide ? ScreenComponents[slide.to] : null;
 
   return (
     <div className="mp-phone-page">
@@ -2830,7 +2867,22 @@ export default function MealPlannerApp() {
                 )}
               </button>
             </div>
-            <ActiveScreen {...screenProps[screen]} />
+            <div className="mp-slide-track">
+              {slide ? (
+                <>
+                  <div key={slide.from} className="mp-slide-pane" style={{ transform: `translateX(${slideSettled ? -slide.dir * 100 : 0}%)` }}>
+                    <FromScreen {...screenProps[slide.from]} />
+                  </div>
+                  <div key={slide.to} className="mp-slide-pane" style={{ transform: `translateX(${slideSettled ? 0 : slide.dir * 100}%)` }}>
+                    <ToScreen {...screenProps[slide.to]} />
+                  </div>
+                </>
+              ) : (
+                <div key={screen} className="mp-slide-pane" style={{ transform: "translateX(0)", transition: "none" }}>
+                  <ActiveScreen {...screenProps[screen]} />
+                </div>
+              )}
+            </div>
           </main>
           <nav className="mp-nav">
             {NAV_ITEMS.map((item) => {
