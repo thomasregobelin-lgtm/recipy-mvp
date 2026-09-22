@@ -3,7 +3,7 @@ import {
   Heart, X, Info, ChevronLeft, ChevronRight, Plus, Trash2, Check,
   Pencil, ShoppingCart, CalendarDays, BookOpen, Sparkles, User,
   Search, ArrowLeft, RotateCcw, Minus, Image as ImageIcon, Menu, Utensils,
-  SlidersHorizontal, Download, Upload
+  SlidersHorizontal, Download, Upload, LayoutGrid
 } from "lucide-react";
 
 /* ----------------------------------------------------------------------
@@ -43,7 +43,11 @@ const UNITS = ["g", "kg", "ml", "l", "pièce", "tranche", "sachet", "paquet", "b
 const TAG_NAMES = [
   "végétarien", "végan", "sans gluten", "sans lactose", "grossesse",
   "rapide", "économique", "riche en protéines", "sucré", "hiver", "été",
+  "italien", "français", "japonais", "brésilien", "indien", "mexicain", "copieux", "épicé",
 ];
+
+// Tags de cuisine reconnus par l'écran "Parcourir" — tout le reste tombe dans "Reste du monde".
+const CUISINE_TAGS = ["italien", "français", "japonais", "brésilien", "indien", "mexicain"];
 
 const ESSENTIAL_SEED = ["Papier toilette", "Sopalin", "Dentifrice", "Liquide vaisselle", "Lessive", "Litière", "Mouchoirs"];
 
@@ -54,7 +58,7 @@ const SEED_RECIPES = [
     temps_preparation: 10, difficulte: "facile", prix_estime: 4,
     description: "Raviolis frais, crème onctueuse et jambon doré au beurre.",
     calories: 610, proteines: 22, lipides: 28,
-    tags: ["rapide", "économique"],
+    tags: ["rapide", "économique", "italien"],
     etapes: ["Faire chauffer une noix de beurre dans une poêle.", "Ajouter les raviolis et un fond d'eau, couvrir 5 min.", "Ajouter la crème et le jambon coupé en lanières, mélanger 2 min à feu doux."],
     ingredients: [{ nom: "raviolis frais", quantite: 500, unite: "g" }, { nom: "crème fraîche", quantite: 20, unite: "cl" }, { nom: "jambon blanc", quantite: 2, unite: "pièce" }, { nom: "beurre", quantite: 20, unite: "g" }],
   },
@@ -64,7 +68,7 @@ const SEED_RECIPES = [
     temps_preparation: 20, difficulte: "facile", prix_estime: 6,
     description: "Spaghetti, lardons croustillants et sauce onctueuse aux œufs.",
     calories: 640, proteines: 26, lipides: 30,
-    tags: ["rapide"],
+    tags: ["rapide", "italien"],
     etapes: ["Cuire les pâtes dans l'eau bouillante salée.", "Faire revenir les lardons à sec.", "Mélanger œufs, parmesan et poivre dans un bol.", "Égoutter les pâtes, mélanger hors du feu avec les lardons puis l'appareil œufs-parmesan."],
     ingredients: [{ nom: "spaghetti", quantite: 400, unite: "g" }, { nom: "lardons", quantite: 200, unite: "g" }, { nom: "œuf", quantite: 3, unite: "pièce" }, { nom: "parmesan", quantite: 60, unite: "g" }, { nom: "poivre", quantite: 1, unite: "pincée" }],
   },
@@ -74,7 +78,7 @@ const SEED_RECIPES = [
     temps_preparation: 30, difficulte: "facile", prix_estime: 5,
     description: "Pois chiches mijotés dans une sauce tomate-coco épicée.",
     calories: 420, proteines: 14, lipides: 18,
-    tags: ["végan", "économique", "sans gluten"],
+    tags: ["végan", "économique", "sans gluten", "indien"],
     etapes: ["Faire revenir oignon et ail dans l'huile.", "Ajouter les épices puis les tomates concassées, laisser réduire 5 min.", "Ajouter les pois chiches et le lait de coco, mijoter 15 min."],
     ingredients: [{ nom: "pois chiches cuits", quantite: 400, unite: "g" }, { nom: "lait de coco", quantite: 400, unite: "ml" }, { nom: "tomates concassées", quantite: 400, unite: "g" }, { nom: "oignon", quantite: 1, unite: "pièce" }, { nom: "ail", quantite: 2, unite: "pièce" }, { nom: "curry en poudre", quantite: 1, unite: "cuillère à soupe" }],
   },
@@ -84,7 +88,7 @@ const SEED_RECIPES = [
     temps_preparation: 90, difficulte: "moyen", prix_estime: 12,
     description: "Poulet entier doré au four, thym et ail.",
     calories: 520, proteines: 42, lipides: 32,
-    tags: ["riche en protéines", "hiver"],
+    tags: ["riche en protéines", "hiver", "français"],
     etapes: ["Préchauffer le four à 200°C.", "Frotter le poulet avec beurre, thym et ail.", "Enfourner 1h15 en arrosant régulièrement."],
     ingredients: [{ nom: "poulet entier", quantite: 1, unite: "pièce" }, { nom: "beurre", quantite: 40, unite: "g" }, { nom: "thym", quantite: 1, unite: "cuillère à café" }, { nom: "ail", quantite: 3, unite: "pièce" }],
   },
@@ -104,7 +108,7 @@ const SEED_RECIPES = [
     temps_preparation: 35, difficulte: "moyen", prix_estime: 7,
     description: "Riz crémeux aux champignons de Paris et parmesan.",
     calories: 480, proteines: 12, lipides: 16,
-    tags: ["végétarien"],
+    tags: ["végétarien", "italien"],
     etapes: ["Faire revenir l'oignon émincé dans du beurre.", "Ajouter le riz, nacrer 2 min.", "Verser le bouillon louche par louche en remuant jusqu'à absorption complète, 20 min.", "Ajouter les champignons poêlés et le parmesan hors du feu."],
     ingredients: [{ nom: "riz arborio", quantite: 300, unite: "g" }, { nom: "champignons de paris", quantite: 250, unite: "g" }, { nom: "bouillon de légumes", quantite: 1, unite: "l" }, { nom: "oignon", quantite: 1, unite: "pièce" }, { nom: "parmesan", quantite: 50, unite: "g" }, { nom: "beurre", quantite: 30, unite: "g" }],
   },
@@ -114,7 +118,7 @@ const SEED_RECIPES = [
     temps_preparation: 10, difficulte: "facile", prix_estime: 2,
     description: "Œufs battus aux herbes fraîches, cuits à la poêle.",
     calories: 310, proteines: 20, lipides: 24,
-    tags: ["rapide", "économique", "végétarien"],
+    tags: ["rapide", "économique", "végétarien", "français"],
     etapes: ["Battre les œufs avec sel, poivre et herbes.", "Cuire dans une poêle beurrée à feu moyen, plier en deux."],
     ingredients: [{ nom: "œuf", quantite: 4, unite: "pièce" }, { nom: "ciboulette", quantite: 1, unite: "cuillère à soupe" }, { nom: "beurre", quantite: 10, unite: "g" }],
   },
@@ -124,7 +128,7 @@ const SEED_RECIPES = [
     temps_preparation: 40, difficulte: "moyen", prix_estime: 5,
     description: "Haricots rouges, maïs et poivrons mijotés aux épices.",
     calories: 390, proteines: 16, lipides: 8,
-    tags: ["végan", "économique", "hiver"],
+    tags: ["végan", "économique", "hiver", "mexicain"],
     etapes: ["Faire revenir oignon, poivron et ail.", "Ajouter tomates concassées, haricots rouges, maïs et épices.", "Laisser mijoter 25 min à couvert."],
     ingredients: [{ nom: "haricots rouges cuits", quantite: 400, unite: "g" }, { nom: "maïs", quantite: 200, unite: "g" }, { nom: "tomates concassées", quantite: 400, unite: "g" }, { nom: "poivron", quantite: 1, unite: "pièce" }, { nom: "oignon", quantite: 1, unite: "pièce" }, { nom: "piment doux", quantite: 1, unite: "cuillère à café" }],
   },
@@ -144,7 +148,7 @@ const SEED_RECIPES = [
     temps_preparation: 35, difficulte: "facile", prix_estime: 4,
     description: "Velouté de potiron et châtaignes, tout en douceur.",
     calories: 240, proteines: 6, lipides: 6,
-    tags: ["végan", "hiver", "économique", "sans gluten"],
+    tags: ["végan", "hiver", "économique", "sans gluten", "français"],
     etapes: ["Faire revenir l'oignon.", "Ajouter le potiron coupé et les châtaignes, couvrir d'eau.", "Cuire 25 min puis mixer."],
     ingredients: [{ nom: "potiron", quantite: 800, unite: "g" }, { nom: "châtaignes cuites", quantite: 200, unite: "g" }, { nom: "oignon", quantite: 1, unite: "pièce" }],
   },
@@ -174,7 +178,7 @@ const SEED_RECIPES = [
     temps_preparation: 75, difficulte: "moyen", prix_estime: 4,
     description: "Pommes de terre fondantes, crème et une pointe d'ail.",
     calories: 430, proteines: 8, lipides: 24,
-    tags: ["végétarien", "hiver", "économique"],
+    tags: ["végétarien", "hiver", "économique", "français", "copieux"],
     etapes: ["Préchauffer le four à 180°C.", "Couper les pommes de terre en fines rondelles.", "Disposer en couches dans un plat avec crème, lait, ail et muscade.", "Cuire 1h15."],
     ingredients: [{ nom: "pomme de terre", quantite: 1, unite: "kg" }, { nom: "crème fraîche", quantite: 20, unite: "cl" }, { nom: "lait", quantite: 20, unite: "cl" }, { nom: "ail", quantite: 1, unite: "pièce" }],
   },
@@ -204,7 +208,7 @@ const SEED_RECIPES = [
     temps_preparation: 50, difficulte: "moyen", prix_estime: 5,
     description: "Pâte croustillante, lardons et appareil œufs-crème.",
     calories: 460, proteines: 16, lipides: 30,
-    tags: ["économique"],
+    tags: ["économique", "français"],
     etapes: ["Préchauffer le four à 190°C.", "Foncer un moule avec la pâte.", "Mélanger œufs, crème, lardons, verser sur la pâte.", "Cuire 35 min."],
     ingredients: [{ nom: "pâte brisée", quantite: 1, unite: "pièce" }, { nom: "lardons", quantite: 200, unite: "g" }, { nom: "œuf", quantite: 3, unite: "pièce" }, { nom: "crème fraîche", quantite: 20, unite: "cl" }],
   },
@@ -224,7 +228,7 @@ const SEED_RECIPES = [
     temps_preparation: 15, difficulte: "facile", prix_estime: 3,
     description: "Jambon et gruyère fondant entre deux tranches dorées.",
     calories: 450, proteines: 22, lipides: 24,
-    tags: ["rapide", "économique"],
+    tags: ["rapide", "économique", "français"],
     etapes: ["Tartiner le pain de béchamel.", "Garnir de jambon et de gruyère râpé.", "Passer au four ou à la poêle jusqu'à ce que ce soit doré."],
     ingredients: [{ nom: "pain de mie", quantite: 4, unite: "pièce" }, { nom: "jambon blanc", quantite: 2, unite: "pièce" }, { nom: "gruyère râpé", quantite: 100, unite: "g" }, { nom: "béchamel", quantite: 100, unite: "g" }],
   },
@@ -254,7 +258,7 @@ const SEED_RECIPES = [
     temps_preparation: 45, difficulte: "facile", prix_estime: 6,
     description: "Aubergines, courgettes, poivrons et tomates mijotés aux herbes de Provence.",
     calories: 220, proteines: 5, lipides: 9,
-    tags: ["végan", "été", "sans gluten", "économique"],
+    tags: ["végan", "été", "sans gluten", "économique", "français"],
     etapes: ["Couper tous les légumes en dés.", "Faire revenir l'oignon et l'ail dans l'huile d'olive.", "Ajouter les légumes et les herbes de Provence, laisser mijoter 35 min à couvert en remuant de temps en temps."],
     ingredients: [{ nom: "aubergine", quantite: 2, unite: "pièce" }, { nom: "courgette", quantite: 2, unite: "pièce" }, { nom: "poivron", quantite: 2, unite: "pièce" }, { nom: "tomate", quantite: 4, unite: "pièce" }, { nom: "oignon", quantite: 1, unite: "pièce" }, { nom: "ail", quantite: 2, unite: "pièce" }, { nom: "herbes de provence", quantite: 1, unite: "cuillère à soupe" }],
   },
@@ -264,7 +268,7 @@ const SEED_RECIPES = [
     temps_preparation: 15, difficulte: "facile", prix_estime: 4,
     description: "Bouillon miso, tofu soyeux, algues wakamé et oignon nouveau.",
     calories: 140, proteines: 9, lipides: 5,
-    tags: ["végétarien", "rapide", "sans gluten"],
+    tags: ["végétarien", "rapide", "sans gluten", "japonais"],
     etapes: ["Faire chauffer le bouillon dashi sans le laisser bouillir.", "Diluer la pâte miso dans un peu de bouillon puis reverser dans la casserole.", "Ajouter le tofu en dés et les algues wakamé réhydratées.", "Parsemer d'oignon nouveau émincé avant de servir."],
     ingredients: [{ nom: "pâte miso", quantite: 3, unite: "cuillère à soupe" }, { nom: "tofu soyeux", quantite: 150, unite: "g" }, { nom: "algues wakamé", quantite: 10, unite: "g" }, { nom: "oignon nouveau", quantite: 1, unite: "pièce" }, { nom: "bouillon dashi", quantite: 1, unite: "l" }],
   },
@@ -274,7 +278,7 @@ const SEED_RECIPES = [
     temps_preparation: 150, difficulte: "difficile", prix_estime: 14,
     description: "Bœuf mijoté longuement au vin rouge, carottes et champignons.",
     calories: 480, proteines: 38, lipides: 24,
-    tags: ["hiver", "riche en protéines"],
+    tags: ["hiver", "riche en protéines", "français", "copieux"],
     etapes: ["Faire dorer les morceaux de bœuf dans une cocotte.", "Ajouter les lardons, oignons et carottes, faire revenir 5 min.", "Saupoudrer de farine, mouiller avec le vin rouge, ajouter le bouquet garni.", "Laisser mijoter à couvert 2h à feu doux, ajouter les champignons 20 min avant la fin."],
     ingredients: [{ nom: "bœuf à bourguignon", quantite: 800, unite: "g" }, { nom: "carotte", quantite: 4, unite: "pièce" }, { nom: "champignon de paris", quantite: 250, unite: "g" }, { nom: "lardons", quantite: 150, unite: "g" }, { nom: "oignon", quantite: 2, unite: "pièce" }, { nom: "vin rouge", quantite: 75, unite: "cl" }, { nom: "farine", quantite: 2, unite: "cuillère à soupe" }],
   },
@@ -294,7 +298,7 @@ const SEED_RECIPES = [
     temps_preparation: 30, difficulte: "facile", prix_estime: 6,
     description: "Biscuits café, crème mascarpone légère et cacao amer.",
     calories: 420, proteines: 7, lipides: 26,
-    tags: ["sucré"],
+    tags: ["sucré", "italien"],
     etapes: ["Séparer les blancs des jaunes d'œufs, fouetter les jaunes avec le sucre puis incorporer le mascarpone.", "Monter les blancs en neige et les incorporer délicatement.", "Tremper rapidement les biscuits dans le café et les disposer dans un plat, alterner avec la crème.", "Réserver au frais au moins 4h, saupoudrer de cacao avant de servir."],
     ingredients: [{ nom: "biscuits cuillère", quantite: 24, unite: "pièce" }, { nom: "mascarpone", quantite: 250, unite: "g" }, { nom: "œuf", quantite: 3, unite: "pièce" }, { nom: "sucre", quantite: 80, unite: "g" }, { nom: "café fort", quantite: 25, unite: "cl" }, { nom: "cacao en poudre", quantite: 2, unite: "cuillère à soupe" }],
   },
@@ -314,7 +318,7 @@ const SEED_RECIPES = [
     temps_preparation: 25, difficulte: "facile", prix_estime: 7,
     description: "Bœuf haché épicé, crudités croquantes et tortillas grillées.",
     calories: 490, proteines: 26, lipides: 22,
-    tags: ["rapide", "épicé"],
+    tags: ["rapide", "épicé", "mexicain"],
     etapes: ["Faire revenir le bœuf haché avec l'oignon et les épices à tacos.", "Réchauffer les tortillas à la poêle.", "Garnir de viande, salade, tomate, fromage râpé et sauce.", "Servir avec des quartiers de citron vert."],
     ingredients: [{ nom: "bœuf haché", quantite: 400, unite: "g" }, { nom: "tortilla de maïs", quantite: 8, unite: "pièce" }, { nom: "tomate", quantite: 2, unite: "pièce" }, { nom: "salade", quantite: 1, unite: "pièce" }, { nom: "fromage râpé", quantite: 80, unite: "g" }, { nom: "épices à tacos", quantite: 1, unite: "sachet" }],
   },
@@ -324,7 +328,7 @@ const SEED_RECIPES = [
     temps_preparation: 40, difficulte: "moyen", prix_estime: 8,
     description: "Poulet mariné au yaourt et aux épices, sauce tomate crémeuse.",
     calories: 460, proteines: 34, lipides: 22,
-    tags: ["riche en protéines", "épicé"],
+    tags: ["riche en protéines", "épicé", "indien", "copieux"],
     etapes: ["Mariner le poulet coupé en cubes dans le yaourt et les épices tikka au moins 1h.", "Faire dorer le poulet mariné à la poêle.", "Ajouter l'oignon, l'ail, le concentré de tomate et la crème, laisser mijoter 15 min.", "Servir avec du riz basmati."],
     ingredients: [{ nom: "blanc de poulet", quantite: 500, unite: "g" }, { nom: "yaourt nature", quantite: 100, unite: "g" }, { nom: "épices tikka masala", quantite: 2, unite: "cuillère à soupe" }, { nom: "crème fraîche", quantite: 15, unite: "cl" }, { nom: "concentré de tomate", quantite: 2, unite: "cuillère à soupe" }, { nom: "riz basmati", quantite: 200, unite: "g" }],
   },
@@ -334,7 +338,7 @@ const SEED_RECIPES = [
     temps_preparation: 70, difficulte: "moyen", prix_estime: 8,
     description: "Couches de pâtes, sauce bolognaise mijotée et béchamel gratinée.",
     calories: 560, proteines: 28, lipides: 26,
-    tags: ["hiver"],
+    tags: ["hiver", "italien", "copieux"],
     etapes: ["Préparer une sauce bolognaise en faisant mijoter bœuf haché, oignon, ail et tomates concassées 30 min.", "Préchauffer le four à 200°C.", "Alterner dans un plat les feuilles de lasagne, la bolognaise et la béchamel.", "Terminer par du fromage râpé et enfourner 30 min."],
     ingredients: [{ nom: "feuilles de lasagne", quantite: 250, unite: "g" }, { nom: "bœuf haché", quantite: 400, unite: "g" }, { nom: "tomates concassées", quantite: 800, unite: "g" }, { nom: "béchamel", quantite: 400, unite: "g" }, { nom: "fromage râpé", quantite: 120, unite: "g" }, { nom: "oignon", quantite: 1, unite: "pièce" }],
   },
@@ -344,7 +348,7 @@ const SEED_RECIPES = [
     temps_preparation: 40, difficulte: "moyen", prix_estime: 6,
     description: "Rouleaux de riz vinaigré, concombre et avocat, servis avec sauce soja.",
     calories: 320, proteines: 6, lipides: 8,
-    tags: ["végan", "été", "sans gluten"],
+    tags: ["végan", "été", "sans gluten", "japonais"],
     etapes: ["Cuire le riz à sushi et le vinaigrer.", "Couper le concombre et l'avocat en bâtonnets.", "Étaler le riz sur une feuille de nori, garnir et rouler serré à l'aide d'une natte.", "Couper en tronçons et servir avec sauce soja et wasabi."],
     ingredients: [{ nom: "riz à sushi", quantite: 300, unite: "g" }, { nom: "feuille de nori", quantite: 6, unite: "pièce" }, { nom: "concombre", quantite: 1, unite: "pièce" }, { nom: "avocat", quantite: 2, unite: "pièce" }, { nom: "sauce soja", quantite: 3, unite: "cuillère à soupe" }, { nom: "vinaigre de riz", quantite: 3, unite: "cuillère à soupe" }],
   },
@@ -364,7 +368,7 @@ const SEED_RECIPES = [
     temps_preparation: 30, difficulte: "moyen", prix_estime: 5,
     description: "Galette de sarrasin garnie de jambon, fromage et œuf.",
     calories: 420, proteines: 20, lipides: 18,
-    tags: ["économique"],
+    tags: ["économique", "français"],
     etapes: ["Préparer la pâte à galette avec la farine de sarrasin, l'eau et le sel, laisser reposer 30 min.", "Cuire les galettes à la poêle bien chaude.", "Garnir de jambon, de fromage râpé et casser un œuf au centre.", "Replier les bords en carré et poursuivre la cuisson jusqu'à ce que l'œuf soit cuit."],
     ingredients: [{ nom: "farine de sarrasin", quantite: 250, unite: "g" }, { nom: "jambon blanc", quantite: 4, unite: "pièce" }, { nom: "gruyère râpé", quantite: 150, unite: "g" }, { nom: "œuf", quantite: 4, unite: "pièce" }],
   },
@@ -394,7 +398,7 @@ const SEED_RECIPES = [
     temps_preparation: 90, difficulte: "difficile", prix_estime: 9,
     description: "Aubergines fondantes, viande hachée épicée et béchamel gratinée.",
     calories: 500, proteines: 24, lipides: 30,
-    tags: ["hiver"],
+    tags: ["hiver", "copieux"],
     etapes: ["Couper les aubergines en tranches, les faire dorer à la poêle.", "Préparer une sauce à l'agneau ou au bœuf haché avec tomates, cannelle et oignon.", "Alterner aubergines et viande dans un plat, napper de béchamel.", "Enfourner 40 min à 190°C jusqu'à ce que le dessus soit doré."],
     ingredients: [{ nom: "aubergine", quantite: 3, unite: "pièce" }, { nom: "bœuf haché", quantite: 400, unite: "g" }, { nom: "tomates concassées", quantite: 400, unite: "g" }, { nom: "béchamel", quantite: 400, unite: "g" }, { nom: "oignon", quantite: 1, unite: "pièce" }, { nom: "cannelle", quantite: 1, unite: "pincée" }],
   },
@@ -404,7 +408,7 @@ const SEED_RECIPES = [
     temps_preparation: 55, difficulte: "moyen", prix_estime: 13,
     description: "Riz au safran, crevettes, moules et calamars.",
     calories: 460, proteines: 30, lipides: 12,
-    tags: ["riche en protéines", "été"],
+    tags: ["riche en protéines", "été", "copieux"],
     etapes: ["Faire revenir l'oignon, l'ail et le poivron dans l'huile d'olive.", "Ajouter le riz et le safran, mélanger 2 min.", "Mouiller avec le bouillon chaud petit à petit, laisser cuire 18 min sans remuer.", "Ajouter crevettes, moules et calamars les 5 dernières minutes de cuisson."],
     ingredients: [{ nom: "riz rond", quantite: 350, unite: "g" }, { nom: "crevettes", quantite: 200, unite: "g" }, { nom: "moules", quantite: 300, unite: "g" }, { nom: "calamars", quantite: 200, unite: "g" }, { nom: "safran", quantite: 1, unite: "pincée" }, { nom: "bouillon de poisson", quantite: 1, unite: "l" }, { nom: "poivron", quantite: 1, unite: "pièce" }],
   },
@@ -414,7 +418,7 @@ const SEED_RECIPES = [
     temps_preparation: 30, difficulte: "facile", prix_estime: 8,
     description: "Steak haché, cheddar fondant, crudités croquantes dans un pain moelleux.",
     calories: 620, proteines: 32, lipides: 34,
-    tags: ["rapide"],
+    tags: ["rapide", "copieux"],
     etapes: ["Façonner les steaks hachés et les assaisonner.", "Cuire les steaks à la poêle avec une tranche de cheddar dessus.", "Griller légèrement les pains à burger.", "Monter le burger avec salade, tomate, oignons et sauce."],
     ingredients: [{ nom: "bœuf haché", quantite: 500, unite: "g" }, { nom: "pain à burger", quantite: 4, unite: "pièce" }, { nom: "cheddar", quantite: 4, unite: "tranche" }, { nom: "salade", quantite: 1, unite: "pièce" }, { nom: "tomate", quantite: 2, unite: "pièce" }, { nom: "oignon rouge", quantite: 1, unite: "pièce" }],
   },
@@ -424,7 +428,7 @@ const SEED_RECIPES = [
     temps_preparation: 45, difficulte: "moyen", prix_estime: 6,
     description: "Raviolis japonais au porc et chou, dorés à la poêle et vapeur.",
     calories: 380, proteines: 18, lipides: 16,
-    tags: ["riche en protéines"],
+    tags: ["riche en protéines", "japonais"],
     etapes: ["Mélanger le porc haché, le chou émincé, l'ail, le gingembre et la sauce soja.", "Garnir les feuilles de raviolis et bien souder les bords.", "Saisir les gyoza à la poêle jusqu'à ce que le dessous soit doré.", "Ajouter un fond d'eau, couvrir et laisser cuire à la vapeur 5 min."],
     ingredients: [{ nom: "porc haché", quantite: 300, unite: "g" }, { nom: "feuilles de raviolis chinois", quantite: 30, unite: "pièce" }, { nom: "chou chinois", quantite: 200, unite: "g" }, { nom: "gingembre", quantite: 1, unite: "cuillère à café" }, { nom: "sauce soja", quantite: 2, unite: "cuillère à soupe" }, { nom: "ail", quantite: 2, unite: "pièce" }],
   },
@@ -454,7 +458,7 @@ const SEED_RECIPES = [
     temps_preparation: 25, difficulte: "facile", prix_estime: 4,
     description: "Crêpe de froment salée garnie de jambon et fromage fondant.",
     calories: 380, proteines: 18, lipides: 16,
-    tags: ["rapide", "économique"],
+    tags: ["rapide", "économique", "français"],
     etapes: ["Préparer la pâte à crêpes salée et laisser reposer 20 min.", "Cuire les crêpes à la poêle.", "Garnir de jambon et de fromage râpé, replier en carré.", "Poursuivre la cuisson jusqu'à ce que le fromage soit fondu."],
     ingredients: [{ nom: "farine", quantite: 250, unite: "g" }, { nom: "lait", quantite: 50, unite: "cl" }, { nom: "œuf", quantite: 3, unite: "pièce" }, { nom: "jambon blanc", quantite: 4, unite: "pièce" }, { nom: "gruyère râpé", quantite: 150, unite: "g" }],
   },
@@ -464,7 +468,7 @@ const SEED_RECIPES = [
     temps_preparation: 50, difficulte: "facile", prix_estime: 5,
     description: "Pâte croustillante et pommes fondantes légèrement caramélisées.",
     calories: 310, proteines: 4, lipides: 12,
-    tags: ["sucré", "économique"],
+    tags: ["sucré", "économique", "français"],
     etapes: ["Préchauffer le four à 180°C et foncer un moule avec la pâte.", "Éplucher et couper les pommes en fines lamelles.", "Disposer les pommes en rosace sur la pâte, saupoudrer de sucre.", "Cuire 35 min jusqu'à ce que la pâte soit dorée."],
     ingredients: [{ nom: "pâte brisée", quantite: 1, unite: "pièce" }, { nom: "pomme", quantite: 5, unite: "pièce" }, { nom: "sucre", quantite: 60, unite: "g" }, { nom: "beurre", quantite: 20, unite: "g" }],
   },
@@ -484,7 +488,7 @@ const SEED_RECIPES = [
     temps_preparation: 40, difficulte: "facile", prix_estime: 5,
     description: "Soupe italienne aux légumes de saison, haricots blancs et petites pâtes.",
     calories: 250, proteines: 10, lipides: 6,
-    tags: ["végan", "économique", "hiver"],
+    tags: ["végan", "économique", "hiver", "italien"],
     etapes: ["Faire revenir oignon, carotte et céleri dans l'huile d'olive.", "Ajouter les tomates concassées, le bouillon et les haricots blancs, laisser mijoter 20 min.", "Ajouter les petites pâtes et cuire encore 10 min.", "Servir avec un filet d'huile d'olive et du parmesan."],
     ingredients: [{ nom: "carotte", quantite: 2, unite: "pièce" }, { nom: "céleri", quantite: 1, unite: "branche" }, { nom: "oignon", quantite: 1, unite: "pièce" }, { nom: "tomates concassées", quantite: 400, unite: "g" }, { nom: "haricots blancs cuits", quantite: 300, unite: "g" }, { nom: "petites pâtes", quantite: 100, unite: "g" }],
   },
@@ -504,7 +508,7 @@ const SEED_RECIPES = [
     temps_preparation: 35, difficulte: "moyen", prix_estime: 5,
     description: "Pâte fine, sauce tomate, mozzarella fondante et basilic frais.",
     calories: 480, proteines: 20, lipides: 18,
-    tags: ["économique"],
+    tags: ["économique", "italien"],
     etapes: ["Étaler la pâte à pizza sur une plaque.", "Napper de sauce tomate et répartir la mozzarella en tranches.", "Enfourner 12 min à 220°C jusqu'à ce que la pâte soit dorée.", "Parsemer de basilic frais et d'un filet d'huile d'olive à la sortie du four."],
     ingredients: [{ nom: "pâte à pizza", quantite: 1, unite: "pièce" }, { nom: "sauce tomate", quantite: 150, unite: "g" }, { nom: "mozzarella", quantite: 200, unite: "g" }, { nom: "basilic frais", quantite: 1, unite: "botte" }],
   },
@@ -524,7 +528,7 @@ const SEED_RECIPES = [
     temps_preparation: 60, difficulte: "moyen", prix_estime: 5,
     description: "Oignons caramélisés dans un bouillon riche, croûton et gruyère gratiné.",
     calories: 360, proteines: 14, lipides: 18,
-    tags: ["hiver", "économique"],
+    tags: ["hiver", "économique", "français"],
     etapes: ["Faire fondre les oignons émincés dans le beurre 30 min à feu doux jusqu'à ce qu'ils caramélisent.", "Ajouter le bouillon de bœuf et laisser mijoter 20 min.", "Répartir dans des bols, ajouter un croûton de pain et du gruyère râpé.", "Passer sous le grill jusqu'à ce que le fromage soit gratiné."],
     ingredients: [{ nom: "oignon", quantite: 6, unite: "pièce" }, { nom: "bouillon de bœuf", quantite: 1, unite: "l" }, { nom: "beurre", quantite: 40, unite: "g" }, { nom: "gruyère râpé", quantite: 150, unite: "g" }, { nom: "pain de campagne", quantite: 4, unite: "tranche" }],
   },
@@ -566,6 +570,7 @@ function buildSeedData() {
       unite: i.unite,
     })),
     tag_ids: r.tags.map((t) => tagIdByName[t]).filter(Boolean),
+    custom_category_ids: [],
   }));
 
   return {
@@ -577,6 +582,7 @@ function buildSeedData() {
     userProfile: { tags_preferences: [], aliments_exclus: [], compte: { nom: "", email: "" } },
     swipeDeckSeenIds: [],
     essentials: ESSENTIAL_SEED.map((nom) => ({ id: uid("ess"), nom })),
+    customCategories: [], // { id, nom }
   };
 }
 
@@ -708,6 +714,8 @@ function migrateWeeklyPlan(d) {
   if (!d.userProfile.aliments_exclus) d.userProfile.aliments_exclus = [];
   d.shoppingList = (d.shoppingList || []).map((s) => s.source ? s : { ...s, source: "plan" });
   if (!d.essentials) d.essentials = ESSENTIAL_SEED.map((nom) => ({ id: uid("ess"), nom }));
+  if (!d.customCategories) d.customCategories = [];
+  d.recipes = d.recipes.map((r) => r.custom_category_ids ? r : { ...r, custom_category_ids: [] });
   return d;
 }
 
@@ -1026,6 +1034,13 @@ const STYLE = `
 
   /* Recipe grid */
   .mp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .mp-category-tile {
+    border-radius: 20px; padding: 16px; display: flex; flex-direction: column; justify-content: flex-end;
+    height: 104px; cursor: pointer; position: relative; transition: transform .12s ease;
+  }
+  .mp-category-tile:active { transform: scale(.97); }
+  .mp-category-tile .cat-name { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; }
+  .mp-category-tile .cat-count { font-size: 11px; margin-top: 2px; opacity: .75; }
   .mp-rcard {
     background: var(--surface); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; cursor: pointer; position: relative;
   }
@@ -1193,7 +1208,7 @@ function CreateScreen({ data, update, setRecipeModal }) {
         temps_preparation: tempsMatch ? Number(tempsMatch[0]) : "", difficulte: form.difficulte,
         prix_estime: form.prix_estime, portions: form.portions,
         calories: form.calories, proteines: form.proteines, lipides: form.lipides,
-        origine: "utilisateur", liked: false, ingredients: resolvedIngredients, tag_ids: form.tag_ids,
+        origine: "utilisateur", liked: false, ingredients: resolvedIngredients, tag_ids: form.tag_ids, custom_category_ids: [],
       });
       return d;
     });
@@ -1352,7 +1367,112 @@ function CreateScreen({ data, update, setRecipeModal }) {
   );
 }
 
-function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, unmarkSeen, resetDeck, setRecipeModal, goToProfile }) {
+const BUILTIN_CATEGORY_DEFS = [
+  { nom: "Italien", tagName: "italien", bg: "var(--terracotta)", fg: "#fff" },
+  { nom: "Français", tagName: "français", bg: "var(--ink)", fg: "#fff" },
+  { nom: "Japonais", tagName: "japonais", bg: "var(--ice)", fg: "#fff" },
+  { nom: "Brésilien", tagName: "brésilien", bg: "var(--gold)", fg: "var(--ink)" },
+  { nom: "Indien", tagName: "indien", bg: "var(--sage)", fg: "#fff" },
+  { nom: "Mexicain", tagName: "mexicain", bg: "var(--terracotta-deep)", fg: "#fff" },
+  { nom: "Végétarien", tagName: "végétarien", bg: "var(--sage-deep)", fg: "#fff" },
+  { nom: "Vegan", tagName: "végan", bg: "var(--plum)", fg: "#fff" },
+  { nom: "Copieux", tagName: "copieux", bg: "#55483A", fg: "#fff" },
+  { nom: "Dessert", tagName: "sucré", bg: "var(--gold)", fg: "var(--ink)" },
+];
+const CUSTOM_CATEGORY_COLORS = [
+  { bg: "var(--ice)", fg: "#fff" }, { bg: "var(--plum)", fg: "#fff" }, { bg: "var(--sage)", fg: "#fff" },
+  { bg: "var(--terracotta-deep)", fg: "#fff" }, { bg: "var(--ink)", fg: "#fff" }, { bg: "var(--terracotta)", fg: "#fff" },
+];
+
+function BrowseScreen({ data, onSelectCategory, addCustomCategory, removeCustomCategory, onClose }) {
+  const [newCatName, setNewCatName] = useState("");
+  const [manageCustom, setManageCustom] = useState(false);
+
+  const tagIdFor = (nom) => data.tags.find((t) => t.nom === nom)?.id;
+  const countByTag = (nom) => {
+    const tid = tagIdFor(nom);
+    return tid ? data.recipes.filter((r) => r.tag_ids.includes(tid)).length : 0;
+  };
+  const cuisineTagIds = CUISINE_TAGS.map(tagIdFor).filter(Boolean);
+  const resteCount = data.recipes.filter((r) => !cuisineTagIds.some((tid) => r.tag_ids.includes(tid))).length;
+
+  const builtins = BUILTIN_CATEGORY_DEFS
+    .map((c) => ({ ...c, count: countByTag(c.tagName), tid: tagIdFor(c.tagName) }))
+    .filter((c) => c.count > 0);
+
+  const customCounts = (catId) => data.recipes.filter((r) => (r.custom_category_ids || []).includes(catId)).length;
+
+  return (
+    <div>
+      <div className="mp-header" style={{ marginBottom: 4, alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button className="mp-round-btn" style={{ width: 34, height: 34 }} onClick={onClose} aria-label="Retour au swipe"><ArrowLeft size={16} /></button>
+          <div>
+            <div className="mp-eyebrow">Envie de...</div>
+            <h1 className="mp-serif mp-title">Parcourir</h1>
+          </div>
+        </div>
+      </div>
+      <div className="mp-sub" style={{ marginBottom: 16 }}>Choisis une catégorie pour ne swiper que les recettes qui vont avec ton envie du moment.</div>
+
+      <div className="mp-grid" style={{ marginBottom: 12 }}>
+        {builtins.map((c) => (
+          <div key={c.tagName} className="mp-category-tile" style={{ background: c.bg, color: c.fg }}
+            onClick={() => onSelectCategory({ kind: "tag", tagId: c.tid, nom: c.nom })}>
+            <div className="cat-name">{c.nom}</div>
+            <div className="cat-count">{c.count} recette{c.count !== 1 ? "s" : ""}</div>
+          </div>
+        ))}
+
+        {data.customCategories.map((cat, i) => {
+          const color = CUSTOM_CATEGORY_COLORS[i % CUSTOM_CATEGORY_COLORS.length];
+          const count = customCounts(cat.id);
+          return (
+            <div key={cat.id} className="mp-category-tile" style={{ background: color.bg, color: color.fg }}
+              onClick={() => (manageCustom ? null : onSelectCategory({ kind: "custom", categoryId: cat.id, nom: cat.nom }))}>
+              <div className="cat-name">{cat.nom}</div>
+              <div className="cat-count">{count} recette{count !== 1 ? "s" : ""}</div>
+              {manageCustom && (
+                <div style={{ position: "absolute", top: 8, right: 8, width: 22, height: 22, borderRadius: "50%", background: "rgba(0,0,0,.25)", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  onClick={(e) => { e.stopPropagation(); removeCustomCategory(cat.id); }}>
+                  <X size={12} color="#fff" />
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        <div className="mp-category-tile" style={{ background: "var(--surface)", border: "1.5px dashed var(--line)", gridColumn: "span 2", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 52 }}
+          onClick={() => onSelectCategory({ kind: "reste", nom: "Reste du monde" })}>
+          <span className="cat-name" style={{ fontSize: 15, color: "var(--ink)" }}>Reste du monde</span>
+          <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>· {resteCount} recette{resteCount !== 1 ? "s" : ""}</span>
+        </div>
+      </div>
+
+      <div style={{ borderTop: "1px solid var(--line)", paddingTop: 14, marginTop: 4 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <span className="mp-label" style={{ margin: 0 }}>Mes catégories perso</span>
+          {data.customCategories.length > 0 && (
+            <button className="mp-round-btn" style={{ width: 28, height: 28 }} onClick={() => setManageCustom((s) => !s)} aria-label="Gérer mes catégories">
+              {manageCustom ? <Check size={12} /> : <SlidersHorizontal size={11} />}
+            </button>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <input className="mp-input" placeholder="Ex. Repas de la semaine" value={newCatName}
+            onChange={(e) => setNewCatName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && newCatName.trim()) { addCustomCategory(newCatName.trim()); setNewCatName(""); } }} />
+          <button className="mp-btn mp-btn-ghost" disabled={!newCatName.trim()}
+            onClick={() => { if (newCatName.trim()) { addCustomCategory(newCatName.trim()); setNewCatName(""); } }}>
+            <Plus size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, unmarkSeen, resetDeck, setRecipeModal, goToProfile, goToBrowse, categoryFilter, setCategoryFilter }) {
   const top = deckRecipes[0];
   const [drag, setDrag] = useState({ x: 0, active: false });
   const [lastPassedId, setLastPassedId] = useState(null);
@@ -1396,7 +1516,7 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
     <div className="mp-discover-fill">
       <div className="mp-header" style={{ marginBottom: 8, flexShrink: 0 }}>
         <div>
-          <div className="mp-eyebrow">{data.recipes.length} recettes à découvrir</div>
+          <div className="mp-eyebrow">{categoryFilter ? `${deckRecipes.length} recette${deckRecipes.length !== 1 ? "s" : ""}` : `${data.recipes.length} recettes à découvrir`}</div>
           <h1 className="mp-serif mp-title">Swipe</h1>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -1406,12 +1526,25 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
             </TagPill>
           )}
           <button className="mp-round-btn" style={{ width: 34, height: 34 }} onClick={() => setShowSearch(true)} aria-label="Rechercher une recette"><Search size={15} /></button>
+          <button className="mp-round-btn" style={{ width: 34, height: 34 }} onClick={goToBrowse} aria-label="Parcourir par catégorie"><LayoutGrid size={15} /></button>
         </div>
       </div>
 
       {showSearch && (
         <RecipeSearchModal data={data} onClose={() => setShowSearch(false)}
           onPick={(id) => { setShowSearch(false); setRecipeModal(id); }} />
+      )}
+
+      {categoryFilter && (
+        <div style={{ flexShrink: 0, marginBottom: 8 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "var(--ink)", color: "#fff", borderRadius: 20, padding: "7px 8px 7px 14px", fontSize: 12.5, fontWeight: 600 }}
+            onClick={() => setCategoryFilter(null)}>
+            Catégorie · {categoryFilter.nom}
+            <span style={{ width: 18, height: 18, borderRadius: "50%", background: "rgba(255,255,255,.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <X size={10} />
+            </span>
+          </div>
+        </div>
       )}
 
       {!useProfileFilter && (
@@ -1749,11 +1882,12 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, clearWe
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
             {selectedSlots.map(({ moment, slot }) => {
               const recipe = slot ? data.recipes.find((r) => r.id === slot.recipe_id) : null;
+              const isPast = selectedISO < todayISO;
               return recipe ? (
-                <div key={moment} className="mp-meal-card" onClick={() => setRecipeModal(recipe.id)}>
+                <div key={moment} className="mp-meal-card" style={isPast ? { opacity: .5 } : undefined} onClick={() => setRecipeModal(recipe.id)}>
                   <RecipeThumb recipe={recipe} className="mp-meal-thumb" />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="mp-eyebrow" style={{ fontSize: 10 }}>{MOMENT_LABEL[moment].toUpperCase()} · {MOMENT_TIME[moment]}</div>
+                    <div className="mp-eyebrow" style={{ fontSize: 10 }}>{MOMENT_LABEL[moment].toUpperCase()} · {isPast ? "Fait" : MOMENT_TIME[moment]}</div>
                     <div className="mp-serif" style={{ fontSize: 15, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{recipe.titre}</div>
                     <div style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>
                       {[recipe.temps_preparation ? `${recipe.temps_preparation} min` : null, recipe.portions ? `${recipe.portions} pers` : null].filter(Boolean).join(" · ")}
@@ -1784,11 +1918,12 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, clearWe
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {daySlots.map(({ moment, slot }) => {
                     const recipe = slot ? data.recipes.find((r) => r.id === slot.recipe_id) : null;
+                    const isPast = iso < todayISO;
                     return recipe ? (
-                      <div key={moment} className="mp-meal-card" style={{ padding: 8 }} onClick={() => setRecipeModal(recipe.id)}>
+                      <div key={moment} className="mp-meal-card" style={{ padding: 8, ...(isPast ? { opacity: .5 } : null) }} onClick={() => setRecipeModal(recipe.id)}>
                         <RecipeThumb recipe={recipe} className="mp-meal-thumb" style={{ width: 42, height: 42 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="mp-eyebrow" style={{ fontSize: 9.5 }}>{MOMENT_LABEL[moment].toUpperCase()}</div>
+                          <div className="mp-eyebrow" style={{ fontSize: 9.5 }}>{isPast ? "Fait" : MOMENT_LABEL[moment].toUpperCase()}</div>
                           <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{recipe.titre}</div>
                         </div>
                         <Trash2 size={13} style={{ cursor: "pointer", flexShrink: 0, color: "var(--ink-faint)" }} onClick={(e) => { e.stopPropagation(); removeFromPlan(slot.id); }} />
@@ -2611,6 +2746,7 @@ export default function MealPlannerApp() {
   const [screen, setScreenState] = useState("discover");
   const [slide, setSlide] = useState(null); // { from, to, dir } | null
   const [slideSettled, setSlideSettled] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState(null); // { kind: "tag"|"reste"|"custom", tagId?, categoryId?, nom } | null
   const swipeStartRef = useRef(null);
   const navRef = useRef(null);
   const navIconRefs = useRef({});
@@ -2622,11 +2758,12 @@ export default function MealPlannerApp() {
     const newIdx = NAV_ORDER.indexOf(next);
     let dir = 1;
     if (oldIdx !== -1 && newIdx !== -1) dir = newIdx > oldIdx ? 1 : -1;
-    else if (next === "profile") dir = 1;
-    else if (screen === "profile") dir = -1;
+    else if (newIdx === -1 && oldIdx !== -1) dir = 1; // vers un écran hors navbar (profil, parcourir)
+    else if (oldIdx === -1 && newIdx !== -1) dir = -1; // retour depuis un écran hors navbar
     setSlide({ from: screen, to: next, dir });
     setScreenState(next);
   };
+  const selectCategory = (filter) => { setCategoryFilter(filter); setScreen("discover"); };
   useEffect(() => {
     if (!slide) return;
     setSlideSettled(false);
@@ -2735,6 +2872,10 @@ export default function MealPlannerApp() {
     update((d) => {
       d.weeklyPlan = d.weeklyPlan.filter((p) => !(p.date === dateISO && p.moment === moment));
       d.weeklyPlan.push({ id: uid("plan"), date: dateISO, moment, recipe_id: recipeId });
+      // Une fois planifiée, la recette quitte "Mes likes" et retourne dans la boucle de
+      // découverte — elle pourra être re-likée plus tard pour une prochaine semaine.
+      const recipe = d.recipes.find((r) => r.id === recipeId);
+      if (recipe) recipe.liked = false;
       return d;
     });
   }, [update]);
@@ -2841,6 +2982,32 @@ export default function MealPlannerApp() {
     });
   }, [update]);
 
+  // Catégories personnelles ("dossiers") dans Parcourir, en plus des catégories de cuisine.
+  const addCustomCategory = useCallback((nom) => {
+    const newId = uid("cat");
+    update((d) => {
+      d.customCategories.push({ id: newId, nom: nom.trim() });
+      return d;
+    });
+    return newId;
+  }, [update]);
+  const removeCustomCategory = useCallback((id) => {
+    update((d) => {
+      d.customCategories = d.customCategories.filter((c) => c.id !== id);
+      d.recipes.forEach((r) => { r.custom_category_ids = (r.custom_category_ids || []).filter((x) => x !== id); });
+      return d;
+    });
+  }, [update]);
+  const toggleRecipeInCategory = useCallback((recipeId, categoryId) => {
+    update((d) => {
+      const r = d.recipes.find((x) => x.id === recipeId);
+      if (!r) return d;
+      const list = r.custom_category_ids || [];
+      r.custom_category_ids = list.includes(categoryId) ? list.filter((x) => x !== categoryId) : [...list, categoryId];
+      return d;
+    });
+  }, [update]);
+
   if (!loaded || !data) {
     return (
       <div className="mp-phone-page">
@@ -2863,25 +3030,37 @@ export default function MealPlannerApp() {
   );
   const shuffleOrder = shuffleOrderRef.current || (shuffleOrderRef.current = shuffleArray(data.recipes.map((r) => r.id)));
   const orderIndex = Object.fromEntries(shuffleOrder.map((id, i) => [id, i]));
+  const matchesCategoryFilter = (r) => {
+    if (!categoryFilter) return true;
+    if (categoryFilter.kind === "tag") return r.tag_ids.includes(categoryFilter.tagId);
+    if (categoryFilter.kind === "reste") {
+      const cuisineTagIds = CUISINE_TAGS.map((nom) => data.tags.find((t) => t.nom === nom)?.id).filter(Boolean);
+      return !cuisineTagIds.some((tid) => r.tag_ids.includes(tid));
+    }
+    if (categoryFilter.kind === "custom") return (r.custom_category_ids || []).includes(categoryFilter.categoryId);
+    return true;
+  };
   const deckRecipes = data.recipes
     .filter((r) =>
       !r.liked &&
       !(data.swipeDeckSeenIds || []).includes(r.id) &&
       (activeFilterTags.length === 0 || activeFilterTags.every((t) => r.tag_ids.includes(t))) &&
-      !recipeContainsExcluded(r)
+      !recipeContainsExcluded(r) &&
+      matchesCategoryFilter(r)
     )
     .sort((a, b) => (orderIndex[a.id] ?? 1e9) - (orderIndex[b.id] ?? 1e9));
 
   const screenProps = {
-    discover: { data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, unmarkSeen, resetDeck, setRecipeModal, goToProfile: () => setScreen("profile") },
+    discover: { data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, unmarkSeen, resetDeck, setRecipeModal, goToProfile: () => setScreen("profile"), goToBrowse: () => setScreen("browse"), categoryFilter, setCategoryFilter },
     liked: { data, likedRecipes, likedSelection, setLikedSelection, setRecipeModal, update, goToDiscover: () => setScreen("discover") },
     planning: { data, likedRecipes, addToPlan, removeFromPlan, clearWeek, generateShoppingList, setRecipeModal },
     shopping: { data, generateShoppingList, toggleShoppingItem, clearShoppingList, addManualShoppingItem, removeShoppingItem, goToPlanning: () => setScreen("planning"), addEssential, removeEssential, addEssentialToCart },
     create: { data, update, setRecipeModal },
     profile: { data, update, toggleAlimentExclu },
+    browse: { data, onSelectCategory: selectCategory, addCustomCategory, removeCustomCategory, onClose: () => setScreen("discover") },
   };
 
-  const ScreenComponents = { discover: DiscoverScreen, liked: LikedScreen, planning: PlanningScreen, shopping: ShoppingScreen, create: CreateScreen, profile: ProfileScreen };
+  const ScreenComponents = { discover: DiscoverScreen, liked: LikedScreen, planning: PlanningScreen, shopping: ShoppingScreen, create: CreateScreen, profile: ProfileScreen, browse: BrowseScreen };
   const ActiveScreen = ScreenComponents[screen];
   const FromScreen = slide ? ScreenComponents[slide.from] : null;
   const ToScreen = slide ? ScreenComponents[slide.to] : null;
