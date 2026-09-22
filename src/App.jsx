@@ -774,31 +774,12 @@ const STYLE = `
     background: var(--bg);
     color: var(--ink);
     height: 100%;
+    height: 100dvh;
     width: 100%;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     position: relative;
-  }
-  @media (prefers-color-scheme: dark) {
-    .mp-root {
-      --bg: #1B1712;
-      --surface: #262019;
-      --surface-2: #33291D;
-      --ink: #F2E7D6;
-      --ink-soft: #B4A488;
-      --ink-faint: #6E6048;
-      --terracotta: #F27A54;
-      --terracotta-deep: #E0693F;
-      --gold: #F3C24C;
-      --gold-deep: #D9A32E;
-      --sage: #63A96B;
-      --sage-deep: #4C8F53;
-      --line: #3B3123;
-      --danger: #E06A5A;
-      --ice: #9FB6BB;
-      --plum: #BD9AA7;
-    }
   }
   .mp-root * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   .mp-root button, .mp-root a, .mp-root [role="button"] { -webkit-tap-highlight-color: transparent; }
