@@ -1133,8 +1133,23 @@ function Modal({ onClose, children, width }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // Glisser vers la droite pour fermer, comme sur iOS — exclut le scroll horizontal et les champs
+  // de saisie, et exige un mouvement nettement plus horizontal que vertical pour ne pas gêner le
+  // défilement du contenu.
+  const swipeStart = useRef(null);
+  const isSwipeExcluded = (target) => target.closest && target.closest(".mp-scroll-x, input, textarea, select, [contenteditable]");
+  const startSwipe = (x, y, target) => { swipeStart.current = isSwipeExcluded(target) ? null : { x, y }; };
+  const endSwipe = (x, y) => {
+    if (!swipeStart.current) return;
+    const dx = x - swipeStart.current.x, dy = y - swipeStart.current.y;
+    swipeStart.current = null;
+    if (dx > 80 && dx > Math.abs(dy) * 1.5) onClose();
+  };
+
   return (
-    <div className="mp-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="mp-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onTouchStart={(e) => { const t = e.touches[0]; startSwipe(t.clientX, t.clientY, e.target); }}
+      onTouchEnd={(e) => { const t = e.changedTouches[0]; endSwipe(t.clientX, t.clientY); }}>
       <div className="mp-modal" style={width ? { maxWidth: width } : undefined}>
         {children}
       </div>
@@ -1968,9 +1983,9 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
           <button className={viewMode === "semaine" ? "active" : ""} onClick={() => setViewMode("semaine")}>Semaine</button>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <button className="mp-round-btn" style={{ width: 28, height: 28 }} onClick={() => setWeekOffset((o) => o - 1)} aria-label="Semaine précédente"><ChevronLeft size={14} /></button>
-          <span style={{ fontSize: 12, color: "var(--ink-soft)", minWidth: 74, textAlign: "center" }}>{weekLabelPrefix}</span>
-          <button className="mp-round-btn" style={{ width: 28, height: 28 }} onClick={() => setWeekOffset((o) => o + 1)} aria-label="Semaine suivante"><ChevronRight size={14} /></button>
+          <button className="mp-round-btn" style={{ width: 28, height: 28, flexShrink: 0 }} onClick={() => setWeekOffset((o) => o - 1)} aria-label="Semaine précédente"><ChevronLeft size={14} /></button>
+          <span style={{ fontSize: 12, color: "var(--ink-soft)", width: 106, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flexShrink: 0 }}>{weekLabelPrefix}</span>
+          <button className="mp-round-btn" style={{ width: 28, height: 28, flexShrink: 0 }} onClick={() => setWeekOffset((o) => o + 1)} aria-label="Semaine suivante"><ChevronRight size={14} /></button>
         </div>
       </div>
 
@@ -2898,13 +2913,14 @@ export default function MealPlannerApp() {
   const navIconRefs = useRef({});
   const [navIndicator, setNavIndicator] = useState({ x: 0, y: 0, visible: false });
   const NAV_ORDER = NAV_ITEMS.map((item) => item.id);
+  const prevScreenRef = useRef("discover");
   const setScreen = (next) => {
     if (next === screen || slide) return;
     const oldIdx = NAV_ORDER.indexOf(screen);
     const newIdx = NAV_ORDER.indexOf(next);
     let dir = 1;
     if (oldIdx !== -1 && newIdx !== -1) dir = newIdx > oldIdx ? 1 : -1;
-    else if (newIdx === -1 && oldIdx !== -1) dir = 1; // vers un écran hors navbar (profil, parcourir)
+    else if (newIdx === -1 && oldIdx !== -1) { dir = 1; prevScreenRef.current = screen; } // vers un écran hors navbar (profil, parcourir)
     else if (oldIdx === -1 && newIdx !== -1) dir = -1; // retour depuis un écran hors navbar
     setSlide({ from: screen, to: next, dir });
     setScreenState(next);
@@ -2938,7 +2954,11 @@ export default function MealPlannerApp() {
   const resolveTabSwipe = (dx, dy) => {
     if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
     const idx = NAV_ORDER.indexOf(screen);
-    if (idx === -1) return;
+    if (idx === -1) {
+      // Écran hors navbar (profil, parcourir) : glisser vers la droite = retour, comme sur iOS.
+      if (dx > 0) setScreen(prevScreenRef.current || "discover");
+      return;
+    }
     if (dx < 0 && idx < NAV_ORDER.length - 1) setScreen(NAV_ORDER[idx + 1]);
     else if (dx > 0 && idx > 0) setScreen(NAV_ORDER[idx - 1]);
   };
