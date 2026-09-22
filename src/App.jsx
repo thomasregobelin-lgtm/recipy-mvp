@@ -1755,19 +1755,7 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
           onPick={(id) => { setShowSearch(false); setRecipeModal(id); }} />
       )}
 
-      {categoryFilter && (
-        <div style={{ flexShrink: 0, marginBottom: 8 }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "var(--ink)", color: "#fff", borderRadius: 20, padding: "7px 8px 7px 14px", fontSize: 12.5, fontWeight: 600 }}
-            onClick={() => setCategoryFilter(null)}>
-            Catégorie · {categoryFilter.nom}
-            <span style={{ width: 18, height: 18, borderRadius: "50%", background: "rgba(255,255,255,.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <X size={10} />
-            </span>
-          </div>
-        </div>
-      )}
-
-      {!useProfileFilter && (
+      {!useProfileFilter && !categoryFilter && (
         <div className="mp-scroll-x" style={{ marginBottom: 8, flexShrink: 0 }}>
           {data.tags.map((t) => (
             <TagPill key={t.id} selected={discoverFilterTags.includes(t.id)}
@@ -1778,7 +1766,18 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
         </div>
       )}
 
-      <div className="mp-deck-wrap">
+      <div className="mp-deck-wrap" style={{ position: "relative" }}>
+        {categoryFilter && (
+          <div style={{ position: "absolute", top: -8, left: 0, right: 0, zIndex: 20, display: "flex", justifyContent: "center", pointerEvents: "none" }}>
+            <div style={{ pointerEvents: "auto", display: "inline-flex", alignItems: "center", gap: 8, background: "var(--ink)", color: "#fff", borderRadius: 20, padding: "7px 8px 7px 14px", fontSize: 12.5, fontWeight: 600, boxShadow: "0 6px 18px rgba(42,33,21,.28)", cursor: "pointer" }}
+              onClick={() => setCategoryFilter(null)}>
+              Catégorie · {categoryFilter.nom}
+              <span style={{ width: 18, height: 18, borderRadius: "50%", background: "rgba(255,255,255,.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <X size={10} />
+              </span>
+            </div>
+          </div>
+        )}
         <div className="mp-deck">
           {!top && (
             <EmptyState icon={<Sparkles size={32} />} title="Plus rien à découvrir"
