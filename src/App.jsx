@@ -535,7 +535,7 @@ const SEED_RECIPES = [
   },
 ];
 
-function buildSeedData() {
+export function buildSeedData() {
   const tags = TAG_NAMES.map((nom) => ({ id: uid("tag"), nom }));
   const tagIdByName = Object.fromEntries(tags.map((t) => [t.nom, t.id]));
 
@@ -720,6 +720,32 @@ function migrateWeeklyPlan(d) {
   return d;
 }
 
+// Fonctions pures de planning (testées isolément dans App.test.js, sans navigateur ni React) :
+// chacune reçoit un brouillon déjà cloné — la convention utilisée par `update` — et le renvoie modifié.
+export function addToPlanInData(d, dateISO, moment, recipeId) {
+  d.weeklyPlan = d.weeklyPlan.filter((p) => !(p.date === dateISO && p.moment === moment));
+  d.weeklyPlan.push({ id: uid("plan"), date: dateISO, moment, recipe_id: recipeId });
+  // Une fois planifiée, la recette quitte "Mes likes" et retourne dans la boucle de
+  // découverte — elle pourra être re-likée plus tard pour une prochaine semaine.
+  const recipe = d.recipes.find((r) => r.id === recipeId);
+  if (recipe) recipe.liked = false;
+  return d;
+}
+
+// Déplace un repas planifié vers un autre jour/moment (glisser-déposer dans le Planning).
+// Si le créneau cible est déjà occupé, les deux repas échangent leur place.
+export function moveMealInData(d, planId, targetDateISO, targetMoment) {
+  const source = d.weeklyPlan.find((p) => p.id === planId);
+  if (!source) return d;
+  if (source.date === targetDateISO && source.moment === targetMoment) return d;
+  const target = d.weeklyPlan.find((p) => p.date === targetDateISO && p.moment === targetMoment && p.id !== planId);
+  const prevDate = source.date, prevMoment = source.moment;
+  source.date = targetDateISO;
+  source.moment = targetMoment;
+  if (target) { target.date = prevDate; target.moment = prevMoment; }
+  return d;
+}
+
 /* ----------------------------------------------------------------------
    Styles (design system maison — pas de kit générique)
 ---------------------------------------------------------------------- */
@@ -754,9 +780,33 @@ const STYLE = `
     flex-direction: column;
     position: relative;
   }
+  @media (prefers-color-scheme: dark) {
+    .mp-root {
+      --bg: #1B1712;
+      --surface: #262019;
+      --surface-2: #33291D;
+      --ink: #F2E7D6;
+      --ink-soft: #B4A488;
+      --ink-faint: #6E6048;
+      --terracotta: #F27A54;
+      --terracotta-deep: #E0693F;
+      --gold: #F3C24C;
+      --gold-deep: #D9A32E;
+      --sage: #63A96B;
+      --sage-deep: #4C8F53;
+      --line: #3B3123;
+      --danger: #E06A5A;
+      --ice: #9FB6BB;
+      --plum: #BD9AA7;
+    }
+  }
   .mp-root * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  .mp-root button, .mp-root a, .mp-root [role="button"] { -webkit-tap-highlight-color: transparent; outline: none; }
-  .mp-root button:focus:not(:focus-visible) { outline: none; }
+  .mp-root button, .mp-root a, .mp-root [role="button"] { -webkit-tap-highlight-color: transparent; }
+  .mp-root button:focus, .mp-root a:focus, .mp-root [role="button"]:focus,
+  .mp-root input:focus, .mp-root textarea:focus, .mp-root select:focus { outline: none; }
+  .mp-root button:focus-visible, .mp-root a:focus-visible, .mp-root [role="button"]:focus-visible {
+    outline: 2px solid var(--terracotta); outline-offset: 2px;
+  }
   .mp-serif { font-family: 'Fraunces', serif; }
 
   /* Application mobile : on centre un cadre au format téléphone sur la page
@@ -954,6 +1004,11 @@ const STYLE = `
   .mp-round-btn.like { background: var(--sage); border-color: var(--sage); color: #fff; }
   .mp-round-btn.pass { background: var(--danger); border-color: var(--danger); color: #fff; }
   .mp-round-btn.info { width: 38px; height: 38px; background: var(--surface-2); border-color: var(--surface-2); color: var(--ink-soft); }
+  .mp-badge-soon {
+    display: flex; align-items: center; gap: 4px; height: 34px; padding: 0 12px; border-radius: 17px;
+    border: 1.5px dashed var(--line); color: var(--ink-faint); font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .02em; cursor: default; flex-shrink: 0; background: transparent;
+  }
   .mp-round-btn:hover { filter: brightness(0.97); }
 
   /* Badges & pastilles style Recipy */
@@ -1250,12 +1305,12 @@ function CreateScreen({ data, update, setRecipeModal }) {
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
           {myRecipes.length > 0 && (
-            <button className="mp-round-btn" style={{ width: 38, height: 38 }} onClick={() => setShowMyRecipes(true)} title="Mes créations">
+            <button className="mp-round-btn" style={{ width: 34, height: 34 }} onClick={() => setShowMyRecipes(true)} title="Mes créations">
               <BookOpen size={16} />
             </button>
           )}
-          <div className="mp-round-btn" style={{ width: 38, height: 38, background: "var(--surface-2)", color: "var(--terracotta)", cursor: "default" }} title="Assistant IA (bientôt)">
-            <Sparkles size={17} />
+          <div className="mp-badge-soon" title="Assistant IA — bientôt disponible">
+            <Sparkles size={12} /> Bientôt
           </div>
         </div>
       </div>
@@ -1323,9 +1378,9 @@ function CreateScreen({ data, update, setRecipeModal }) {
         <div>
           <label className="mp-label">Portions</label>
           <div style={{ display: "flex", alignItems: "center", gap: 10, height: 37 }}>
-            <button className="mp-round-btn" style={{ width: 30, height: 30 }} onClick={() => setForm((f) => ({ ...f, portions: Math.max(1, f.portions - 1) }))}><Minus size={13} /></button>
+            <button className="mp-round-btn" style={{ width: 32, height: 32 }} onClick={() => setForm((f) => ({ ...f, portions: Math.max(1, f.portions - 1) }))}><Minus size={13} /></button>
             <span className="mp-serif" style={{ fontSize: 16, fontWeight: 600, minWidth: 16, textAlign: "center" }}>{form.portions}</span>
-            <button className="mp-round-btn" style={{ width: 30, height: 30 }} onClick={() => setForm((f) => ({ ...f, portions: f.portions + 1 }))}><Plus size={13} /></button>
+            <button className="mp-round-btn" style={{ width: 32, height: 32 }} onClick={() => setForm((f) => ({ ...f, portions: f.portions + 1 }))}><Plus size={13} /></button>
           </div>
         </div>
       </div>
@@ -1478,7 +1533,7 @@ function BrowseScreen({ data, onSelectCategory, addCustomCategory, removeCustomC
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <span className="mp-label" style={{ margin: 0 }}>Mes catégories perso</span>
           {data.customCategories.length > 0 && (
-            <button className="mp-round-btn" style={{ width: 28, height: 28 }} onClick={() => setManageCustom((s) => !s)} aria-label="Gérer mes catégories">
+            <button className="mp-round-btn" style={{ width: 32, height: 32 }} onClick={() => setManageCustom((s) => !s)} aria-label="Gérer mes catégories">
               {manageCustom ? <Check size={12} /> : <SlidersHorizontal size={11} />}
             </button>
           )}
@@ -1541,7 +1596,7 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
     <div className="mp-discover-fill">
       <div className="mp-header" style={{ marginBottom: 8, flexShrink: 0 }}>
         <div>
-          <div className="mp-eyebrow">{categoryFilter ? `${deckRecipes.length} recette${deckRecipes.length !== 1 ? "s" : ""}` : `${data.recipes.length} recettes à découvrir`}</div>
+          <div className="mp-eyebrow">{deckRecipes.length} recette{deckRecipes.length !== 1 ? "s" : ""} à découvrir</div>
           <h1 className="mp-serif mp-title">Swipe</h1>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -1611,9 +1666,8 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
                   </button>
                 </div>
                 <div className="mp-swipe-body">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                    <span className="mp-eyebrow coral">Recette du jour</span>
-                    <span style={{ fontSize: 11, color: "var(--ink-faint)" }}>N° {data.recipes.findIndex((x) => x.id === r.id) + 1}</span>
+                  <div style={{ display: "flex", alignItems: "baseline" }}>
+                    <span className="mp-eyebrow coral">À découvrir</span>
                   </div>
                   <p className="mp-serif mp-swipe-title">{r.titre}</p>
                   {r.description && <p className="mp-swipe-desc">{r.description}</p>}
@@ -1724,15 +1778,19 @@ function LikedScreen({ data, likedRecipes, likedSelection, setLikedSelection, se
         </div>
       )}
 
-      <div style={{ position: "relative", marginBottom: 12 }}>
-        <Search size={14} style={{ position: "absolute", left: 13, top: 12, color: "var(--ink-faint)" }} />
-        <input className="mp-input" style={{ paddingLeft: 34, borderRadius: 24 }} placeholder="Chercher une recette" value={query} onChange={(e) => setQuery(e.target.value)} />
-      </div>
-      <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
-        <TagPill tone="sage" selected={filter === "toutes"} onClick={() => setFilter("toutes")}>Toutes</TagPill>
-        <TagPill tone="sage" selected={filter === "express"} onClick={() => setFilter("express")}>Express</TagPill>
-        {vegeTag && <TagPill tone="sage" selected={filter === "vege"} onClick={() => setFilter("vege")}>Végé</TagPill>}
-      </div>
+      {likedRecipes.length > 0 && (
+        <>
+          <div style={{ position: "relative", marginBottom: 12 }}>
+            <Search size={14} style={{ position: "absolute", left: 13, top: 12, color: "var(--ink-faint)" }} />
+            <input className="mp-input" style={{ paddingLeft: 34, borderRadius: 24 }} placeholder="Chercher une recette" value={query} onChange={(e) => setQuery(e.target.value)} />
+          </div>
+          <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
+            <TagPill tone="sage" selected={filter === "toutes"} onClick={() => setFilter("toutes")}>Toutes</TagPill>
+            <TagPill tone="sage" selected={filter === "express"} onClick={() => setFilter("express")}>Express</TagPill>
+            {vegeTag && <TagPill tone="sage" selected={filter === "vege"} onClick={() => setFilter("vege")}>Végé</TagPill>}
+          </div>
+        </>
+      )}
 
       {likedRecipes.length === 0 ? (
         <div className="mp-card" style={{ textAlign: "center", padding: "38px 20px" }}>
@@ -1968,7 +2026,10 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
   const selectedDayNum = weekDates[selectedIdx >= 0 ? selectedIdx : 0]?.getDate();
   const selectedSlots = ["midi", "soir"].map((moment) => ({ moment, slot: findSlot(selectedISO, moment) }));
   const selectedFilledCount = selectedSlots.filter((s) => s.slot).length;
-  const remaining = weekDatesISO.length * 2 - weekPlanCount;
+  // "Complet" = au moins un repas par jour, pas les 14 créneaux — un objectif atteignable plutôt
+  // qu'un seuil décourageant, sachant que "Générer une liste de courses" marche déjà avec 1 repas.
+  const daysWithMeal = new Set(weekPlanItems.map((p) => p.date)).size;
+  const daysWithoutMeal = weekDatesISO.length - daysWithMeal;
 
   return (
     <div>
@@ -1983,9 +2044,9 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
           <button className={viewMode === "semaine" ? "active" : ""} onClick={() => setViewMode("semaine")}>Semaine</button>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <button className="mp-round-btn" style={{ width: 28, height: 28, flexShrink: 0 }} onClick={() => setWeekOffset((o) => o - 1)} aria-label="Semaine précédente"><ChevronLeft size={14} /></button>
+          <button className="mp-round-btn" style={{ width: 32, height: 32, flexShrink: 0 }} onClick={() => setWeekOffset((o) => o - 1)} aria-label="Semaine précédente"><ChevronLeft size={14} /></button>
           <span style={{ fontSize: 12, color: "var(--ink-soft)", width: 106, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flexShrink: 0 }}>{weekLabelPrefix}</span>
-          <button className="mp-round-btn" style={{ width: 28, height: 28, flexShrink: 0 }} onClick={() => setWeekOffset((o) => o + 1)} aria-label="Semaine suivante"><ChevronRight size={14} /></button>
+          <button className="mp-round-btn" style={{ width: 32, height: 32, flexShrink: 0 }} onClick={() => setWeekOffset((o) => o + 1)} aria-label="Semaine suivante"><ChevronRight size={14} /></button>
         </div>
       </div>
 
@@ -2095,14 +2156,14 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
         <ShoppingCart size={14} /> Générer une liste de courses
       </button>
 
-      {remaining > 0 && (
+      {daysWithoutMeal > 0 && (
         <div className="mp-tip-banner">
           <div className="mp-tip-eyebrow">Petit coup de pouce</div>
-          <p className="mp-tip-title">{weekPlanCount === 0 ? "Votre semaine est vide." : "Votre semaine est presque prête."}</p>
+          <p className="mp-tip-title">{weekPlanCount === 0 ? "Votre semaine est vide." : "Quelques jours sans repas."}</p>
           <div className="mp-tip-body">
             {weekPlanCount === 0
-              ? "Ajoutez vos premiers repas pour pouvoir générer une liste de courses complète."
-              : `Ajoutez encore ${remaining} repas pour générer une liste complète.`}
+              ? "Ajoutez vos premiers repas — la liste de courses fonctionne dès qu'il y en a un."
+              : `${daysWithoutMeal} jour${daysWithoutMeal > 1 ? "s n'ont" : " n'a"} encore de repas prévu. Pas bloquant : la liste de courses se génère déjà avec ce que vous avez planifié.`}
           </div>
         </div>
       )}
@@ -2229,7 +2290,7 @@ function ShoppingScreen({ data, generateShoppingList, toggleShoppingItem, clearS
       <div className="mp-card" style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div className="mp-serif" style={{ fontSize: 15, fontWeight: 600 }}>Essentiels du quotidien</div>
-          <button className="mp-round-btn" style={{ width: 30, height: 30 }} onClick={() => setManageEssentials((s) => !s)} aria-label="Gérer les essentiels">
+          <button className="mp-round-btn" style={{ width: 32, height: 32 }} onClick={() => setManageEssentials((s) => !s)} aria-label="Gérer les essentiels">
             {manageEssentials ? <Check size={14} /> : <SlidersHorizontal size={13} />}
           </button>
         </div>
@@ -2461,11 +2522,22 @@ function ProfileScreen({ data, update, toggleAlimentExclu }) {
   );
 }
 
+const LAST_BACKUP_KEY = "recipy-last-backup";
+
 function ParametresPanel({ data, update }) {
   const [confirmReset, setConfirmReset] = useState(false);
   const [importError, setImportError] = useState("");
   const [importDone, setImportDone] = useState(false);
   const importInputRef = useRef(null);
+  const [lastBackupISO, setLastBackupISO] = useState(() => {
+    try { return localStorage.getItem(LAST_BACKUP_KEY); } catch { return null; }
+  });
+  const recordBackup = () => {
+    const now = new Date().toISOString();
+    try { localStorage.setItem(LAST_BACKUP_KEY, now); } catch {}
+    setLastBackupISO(now);
+  };
+  const daysSinceBackup = lastBackupISO ? Math.floor((Date.now() - new Date(lastBackupISO).getTime()) / 86400000) : null;
 
   const doReset = () => {
     update(() => buildSeedData());
@@ -2473,6 +2545,7 @@ function ParametresPanel({ data, update }) {
   };
 
   const handleExport = () => {
+    recordBackup();
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -2495,6 +2568,7 @@ function ParametresPanel({ data, update }) {
           throw new Error("format invalide");
         }
         update(() => migrateWeeklyPlan(parsed));
+        recordBackup();
         setImportError("");
         setImportDone(true);
         setTimeout(() => setImportDone(false), 4000);
@@ -2512,6 +2586,17 @@ function ParametresPanel({ data, update }) {
         <div className="mp-label" style={{ marginBottom: 10 }}>Sauvegarde</div>
         <div style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 12, lineHeight: 1.5 }}>
           Tout est stocké uniquement sur cet appareil — si tu changes de téléphone ou vides le cache, tout est perdu. Exporte régulièrement un fichier de sauvegarde pour pouvoir tout restaurer.
+        </div>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, marginBottom: 12,
+          color: daysSinceBackup !== null && daysSinceBackup <= 14 ? "var(--sage-deep)" : "var(--danger)",
+        }}>
+          {daysSinceBackup === null && <>⚠️ Aucune sauvegarde pour l'instant</>}
+          {daysSinceBackup === 0 && <>✓ Dernière sauvegarde aujourd'hui</>}
+          {daysSinceBackup === 1 && <>✓ Dernière sauvegarde hier</>}
+          {daysSinceBackup !== null && daysSinceBackup > 1 && (
+            <>{daysSinceBackup > 14 ? "⚠️" : "✓"} Dernière sauvegarde il y a {daysSinceBackup} jours</>
+          )}
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="mp-btn mp-btn-sage" style={{ color: "#fff" }} onClick={handleExport}><Download size={14} /> Exporter mes données</button>
@@ -2760,9 +2845,9 @@ function RecipeModal({ recipeModal, data, update, setRecipeModal, deleteRecipe }
           <h1 className="mp-serif" style={{ fontSize: 22, margin: 0 }}>Modifier</h1>
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          <button className="mp-round-btn like" style={{ width: 38, height: 38, background: form.liked ? "var(--sage)" : "var(--surface)", color: form.liked ? "#fff" : "var(--sage-deep)" }}
-            onClick={() => setForm((f) => ({ ...f, liked: !f.liked }))} title="Liker"><Heart size={17} fill={form.liked ? "currentColor" : "none"} /></button>
-          <button className="mp-round-btn" style={{ width: 38, height: 38 }} onClick={() => setRecipeModal(null)}><X size={17} /></button>
+          <button className="mp-round-btn like" style={{ width: 34, height: 34, background: form.liked ? "var(--sage)" : "var(--surface)", color: form.liked ? "#fff" : "var(--sage-deep)" }}
+            onClick={() => setForm((f) => ({ ...f, liked: !f.liked }))} title="Liker"><Heart size={16} fill={form.liked ? "currentColor" : "none"} /></button>
+          <button className="mp-round-btn" style={{ width: 34, height: 34 }} onClick={() => setRecipeModal(null)}><X size={17} /></button>
         </div>
       </div>
 
@@ -2800,10 +2885,10 @@ function RecipeModal({ recipeModal, data, update, setRecipeModal, deleteRecipe }
         <div>
           <label className="mp-label">Portions</label>
           <div style={{ display: "flex", alignItems: "center", gap: 10, height: 37 }}>
-            <button className="mp-round-btn" style={{ width: 30, height: 30 }}
+            <button className="mp-round-btn" style={{ width: 32, height: 32 }}
               onClick={() => setForm((f) => ({ ...f, portions: Math.max(1, (Number(f.portions) || 1) - 1) }))}><Minus size={13} /></button>
             <span className="mp-serif" style={{ fontSize: 16, fontWeight: 600, minWidth: 16, textAlign: "center" }}>{form.portions || 4}</span>
-            <button className="mp-round-btn" style={{ width: 30, height: 30 }}
+            <button className="mp-round-btn" style={{ width: 32, height: 32 }}
               onClick={() => setForm((f) => ({ ...f, portions: (Number(f.portions) || 1) + 1 }))}><Plus size={13} /></button>
           </div>
         </div>
@@ -3035,33 +3120,13 @@ export default function MealPlannerApp() {
   }, [update]);
 
   const addToPlan = useCallback((dateISO, moment, recipeId) => {
-    update((d) => {
-      d.weeklyPlan = d.weeklyPlan.filter((p) => !(p.date === dateISO && p.moment === moment));
-      d.weeklyPlan.push({ id: uid("plan"), date: dateISO, moment, recipe_id: recipeId });
-      // Une fois planifiée, la recette quitte "Mes likes" et retourne dans la boucle de
-      // découverte — elle pourra être re-likée plus tard pour une prochaine semaine.
-      const recipe = d.recipes.find((r) => r.id === recipeId);
-      if (recipe) recipe.liked = false;
-      return d;
-    });
+    update((d) => addToPlanInData(d, dateISO, moment, recipeId));
   }, [update]);
   const removeFromPlan = useCallback((planId) => {
     update((d) => { d.weeklyPlan = d.weeklyPlan.filter((p) => p.id !== planId); return d; });
   }, [update]);
-  // Déplace un repas planifié vers un autre jour/moment (glisser-déposer dans le Planning).
-  // Si le créneau cible est déjà occupé, les deux repas échangent leur place.
   const moveMeal = useCallback((planId, targetDateISO, targetMoment) => {
-    update((d) => {
-      const source = d.weeklyPlan.find((p) => p.id === planId);
-      if (!source) return d;
-      if (source.date === targetDateISO && source.moment === targetMoment) return d;
-      const target = d.weeklyPlan.find((p) => p.date === targetDateISO && p.moment === targetMoment && p.id !== planId);
-      const prevDate = source.date, prevMoment = source.moment;
-      source.date = targetDateISO;
-      source.moment = targetMoment;
-      if (target) { target.date = prevDate; target.moment = prevMoment; }
-      return d;
-    });
+    update((d) => moveMealInData(d, planId, targetDateISO, targetMoment));
   }, [update]);
   const clearWeek = useCallback((weekDatesISO) => {
     update((d) => { d.weeklyPlan = d.weeklyPlan.filter((p) => !weekDatesISO.includes(p.date)); return d; });
