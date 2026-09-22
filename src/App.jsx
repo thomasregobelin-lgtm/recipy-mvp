@@ -1105,7 +1105,11 @@ const STYLE = `
     border: none; display: flex; flex-direction: column; overflow: hidden;
     box-shadow: 0 8px 24px rgba(160,20,70,.16); cursor: grab; user-select: none;
   }
-  .mp-swipe-photo-wrap { height: 44%; flex-shrink: 0; position: relative; overflow: hidden; }
+  /* La photo est l'élément qui doit rétrécir en premier quand la carte manque de place (un filtre
+     catégorie qui prend sa propre ligne, un écran court…) — le titre, la description et les valeurs
+     nutritionnelles ne doivent jamais être rognés, donc le corps ne rétrécit jamais sous sa taille
+     naturelle (flex-shrink: 0) et la photo absorbe toute la réduction via flex-grow/shrink. */
+  .mp-swipe-photo-wrap { flex: 1 1 auto; min-height: 64px; position: relative; overflow: hidden; }
   .mp-swipe-photo {
     height: 100%; background: var(--surface-2);
     display: flex; align-items: center; justify-content: center; color: var(--terracotta);
@@ -1119,17 +1123,16 @@ const STYLE = `
     font-family: 'Fraunces', serif; font-size: 14px;
   }
   .mp-mini-thumb img { width: 100%; height: 100%; object-fit: cover; }
-  .mp-swipe-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; overflow: hidden; }
+  .mp-swipe-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
   .mp-swipe-title { font-size: 16px; font-weight: 600; margin: 0; }
   .mp-swipe-desc { font-size: 12.5px; color: var(--ink-soft); line-height: 1.35; margin: 1px 0 0; }
   .mp-swipe-meta { font-size: 12.5px; color: var(--ink-soft); display: flex; gap: 12px; flex-wrap: wrap; }
   @media (max-height: 700px) {
-    .mp-swipe-photo-wrap { height: 36%; }
     .mp-swipe-body { padding: 10px 16px; gap: 4px; }
     .mp-swipe-desc { display: none; }
     .mp-stat-pill { padding: 6px 6px; }
     .mp-stat-pill .mp-stat-value { font-size: 15px; }
-    .mp-deck { min-height: 150px; }
+    .mp-deck { min-height: 192px; }
   }
   .mp-swipe-stamp {
     position: absolute; top: 26px; padding: 6px 14px; border: 3px solid; border-radius: 8px;
@@ -1766,18 +1769,19 @@ function DiscoverScreen({ data, deckRecipes, profileTagIds, useProfileFilter, se
         </div>
       )}
 
-      <div className="mp-deck-wrap" style={{ position: "relative" }}>
-        {categoryFilter && (
-          <div style={{ position: "absolute", top: -8, left: 0, right: 0, zIndex: 20, display: "flex", justifyContent: "center", pointerEvents: "none" }}>
-            <div style={{ pointerEvents: "auto", display: "inline-flex", alignItems: "center", gap: 8, background: "var(--ink)", color: "#fff", borderRadius: 20, padding: "7px 8px 7px 14px", fontSize: 12.5, fontWeight: 600, boxShadow: "0 6px 18px rgba(42,33,21,.28)", cursor: "pointer" }}
-              onClick={() => setCategoryFilter(null)}>
-              Catégorie · {categoryFilter.nom}
-              <span style={{ width: 18, height: 18, borderRadius: "50%", background: "rgba(255,255,255,.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <X size={10} />
-              </span>
-            </div>
+      {categoryFilter && (
+        <div style={{ flexShrink: 0, marginBottom: 8, display: "flex", justifyContent: "center" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--ink)", color: "#fff", borderRadius: 18, padding: "5px 6px 5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+            onClick={() => setCategoryFilter(null)}>
+            Catégorie · {categoryFilter.nom}
+            <span style={{ width: 16, height: 16, borderRadius: "50%", background: "rgba(255,255,255,.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <X size={9} />
+            </span>
           </div>
-        )}
+        </div>
+      )}
+
+      <div className="mp-deck-wrap">
         <div className="mp-deck">
           {!top && (
             <EmptyState icon={<Sparkles size={32} />} title="Plus rien à découvrir"
