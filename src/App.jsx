@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   Heart, X, Info, ChevronLeft, ChevronRight, Plus, Trash2, Check,
   Pencil, ShoppingCart, CalendarDays, BookOpen, Sparkles, User,
@@ -1842,13 +1843,21 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
   const [drag, setDrag] = useState(null); // { planId, recipe, fromISO, fromMoment, w, h, offsetX, offsetY, x, y, overKey } | null
   const slotRefs = useRef({});
   const slotKey = (iso, moment) => `${iso}__${moment}`;
-  const registerSlot = (iso, moment) => (el) => { if (el) slotRefs.current[slotKey(iso, moment)] = el; };
+  const registerSlot = (iso, moment) => (el) => {
+    const k = slotKey(iso, moment);
+    if (el) slotRefs.current[k] = el; else delete slotRefs.current[k];
+  };
   const longPressTimerRef = useRef(null);
   const pressOriginRef = useRef(null); // { pointerId, el, planId, recipe, iso, moment, startX, startY }
+  // Source de vérité pour l'interaction en cours — un ref, pas le state `drag` : contrairement au
+  // state, il est mis à jour de façon synchrone, donc jamais en retard sur un relâchement rapide
+  // qui suivrait de près le déclenchement de l'appui long (le re-render de `drag` est asynchrone).
+  const activeDragRef = useRef(null); // { planId, recipe, fromISO, fromMoment } | null
   const cachedRectsRef = useRef([]);
   const rafRef = useRef(null);
   const latestPointRef = useRef({ x: 0, y: 0 });
   const suppressClickRef = useRef(false);
+  const resolvedRef = useRef(false);
 
   const clearLongPress = () => {
     if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
@@ -1862,6 +1871,8 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
     const rect = origin.el.getBoundingClientRect();
     cachedRectsRef.current = Object.entries(slotRefs.current).map(([key, el]) => ({ key, rect: el.getBoundingClientRect() }));
     suppressClickRef.current = true;
+    resolvedRef.current = false;
+    activeDragRef.current = { planId: origin.planId, recipe: origin.recipe, fromISO: origin.iso, fromMoment: origin.moment };
     if (navigator.vibrate) { try { navigator.vibrate(10); } catch {} }
     setDrag({
       planId: origin.planId, recipe: origin.recipe, fromISO: origin.iso, fromMoment: origin.moment,
@@ -1877,7 +1888,7 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
     longPressTimerRef.current = setTimeout(engageDrag, LONG_PRESS_MS);
   };
   const onCardPointerMove = (e) => {
-    if (drag) {
+    if (activeDragRef.current) {
       latestPointRef.current = { x: e.clientX, y: e.clientY };
       if (rafRef.current == null) {
         rafRef.current = requestAnimationFrame(() => {
@@ -1894,17 +1905,24 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
     const dx = e.clientX - origin.startX, dy = e.clientY - origin.startY;
     if (Math.hypot(dx, dy) > LONG_PRESS_CANCEL_PX) clearLongPress();
   };
-  const onCardPointerUp = () => {
+  const onCardPointerUp = (e) => {
     clearLongPress();
     if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
-    setDrag((prev) => {
-      if (!prev) return null;
-      if (prev.overKey) {
-        const [iso, moment] = prev.overKey.split("__");
-        if (iso !== prev.fromISO || moment !== prev.fromMoment) moveMeal(prev.planId, iso, moment);
-      }
-      return null;
-    });
+    const active = activeDragRef.current;
+    if (!active || resolvedRef.current) return;
+    resolvedRef.current = true;
+    activeDragRef.current = null;
+    // On recalcule la cible exactement à la position de relâchement plutôt que de se fier au
+    // dernier `overKey` commité (mis à jour au rythme de requestAnimationFrame) : un relâchement
+    // très rapide pourrait sinon intervenir avant la dernière mise à jour visuelle.
+    let finalOverKey = slotKey(active.fromISO, active.fromMoment);
+    if (e && typeof e.clientX === "number") {
+      const hit = cachedRectsRef.current.find((s) => e.clientX >= s.rect.left && e.clientX <= s.rect.right && e.clientY >= s.rect.top && e.clientY <= s.rect.bottom);
+      if (hit) finalOverKey = hit.key;
+    }
+    const [iso, moment] = finalOverKey.split("__");
+    if (iso !== active.fromISO || moment !== active.fromMoment) moveMeal(active.planId, iso, moment);
+    setDrag(null);
   };
   const onCardClick = (recipeId) => {
     if (suppressClickRef.current) { suppressClickRef.current = false; return; }
@@ -1914,7 +1932,7 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
   // n'a par ex. pas pu être posé), on résout quand même le glissement pour ne jamais rester bloqué.
   useEffect(() => {
     if (!drag) return;
-    const resolve = () => onCardPointerUp();
+    const resolve = (e) => onCardPointerUp(e);
     window.addEventListener("pointerup", resolve);
     window.addEventListener("pointercancel", resolve);
     return () => {
@@ -1981,8 +1999,16 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
             {selectedSlots.map(({ moment, slot }) => {
               const recipe = slot ? data.recipes.find((r) => r.id === slot.recipe_id) : null;
               const isPast = selectedISO < todayISO;
+              const key = slotKey(selectedISO, moment);
+              const isDragSource = drag && drag.fromISO === selectedISO && drag.fromMoment === moment;
+              const isDragOver = drag && drag.overKey === key && !isDragSource;
+              const dropStyle = isDragOver ? { background: "var(--surface-2)", boxShadow: "inset 0 0 0 2px var(--terracotta)" } : null;
               return recipe ? (
-                <div key={moment} className="mp-meal-card" style={isPast ? { opacity: .5 } : undefined} onClick={() => setRecipeModal(recipe.id)}>
+                <div key={key} ref={registerSlot(selectedISO, moment)} className={`mp-meal-card ${isPast ? "" : "mp-meal-card--draggable"}`}
+                  style={{ ...(isPast ? { opacity: .5 } : null), ...(isDragSource ? { opacity: .25 } : null), ...dropStyle }}
+                  onClick={() => onCardClick(recipe.id)}
+                  onPointerDown={(e) => onCardPointerDown(e, slot.id, recipe, selectedISO, moment)}
+                  onPointerMove={onCardPointerMove} onPointerUp={onCardPointerUp} onPointerCancel={onCardPointerUp}>
                   <RecipeThumb recipe={recipe} className="mp-meal-thumb" />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="mp-eyebrow" style={{ fontSize: 10 }}>{MOMENT_LABEL[moment].toUpperCase()} · {isPast ? "Fait" : MOMENT_TIME[moment]}</div>
@@ -1994,7 +2020,8 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
                   <Trash2 size={15} style={{ cursor: "pointer", flexShrink: 0, color: "var(--ink-faint)" }} onClick={(e) => { e.stopPropagation(); removeFromPlan(slot.id); }} />
                 </div>
               ) : (
-                <div key={moment} className="mp-meal-slot-empty" onClick={() => setPicker({ dateISO: selectedISO, dayIdx: selectedIdx, moment })}>
+                <div key={key} ref={registerSlot(selectedISO, moment)} className="mp-meal-slot-empty" style={dropStyle}
+                  onClick={() => setPicker({ dateISO: selectedISO, dayIdx: selectedIdx, moment })}>
                   <Plus size={15} /> Ajouter un repas du {moment === "midi" ? "midi" : "soir"}…
                 </div>
               );
@@ -2072,7 +2099,7 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
           onClose={() => setPicker(null)} />
       )}
 
-      {drag && (
+      {drag && createPortal(
         <div style={{ position: "fixed", left: drag.x - drag.offsetX, top: drag.y - drag.offsetY, width: drag.w, zIndex: 200, pointerEvents: "none" }}>
           <div className="mp-meal-card mp-meal-card--dragging" style={{ padding: 8, margin: 0 }}>
             <RecipeThumb recipe={drag.recipe} className="mp-meal-thumb" style={{ width: 42, height: 42 }} />
@@ -2081,7 +2108,8 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
               <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{drag.recipe.titre}</div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
