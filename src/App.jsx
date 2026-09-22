@@ -3,7 +3,7 @@ import {
   Heart, X, Info, ChevronLeft, ChevronRight, Plus, Trash2, Check,
   Pencil, ShoppingCart, CalendarDays, BookOpen, Sparkles, User,
   Search, ArrowLeft, RotateCcw, Minus, Image as ImageIcon, Menu, Utensils,
-  SlidersHorizontal, Download, Upload, LayoutGrid
+  SlidersHorizontal, Download, Upload, LayoutGrid, GripVertical
 } from "lucide-react";
 
 /* ----------------------------------------------------------------------
@@ -1812,10 +1812,48 @@ function MealSlotPicker({ dateISO, moment, dayLabel, likedRecipes, weekRecipeIds
 const MOMENT_TIME = { midi: "12:30", soir: "19:30" };
 const MOMENT_LABEL = { midi: "Déjeuner", soir: "Dîner" };
 
-function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, clearWeek, generateShoppingList, setRecipeModal }) {
+function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMeal, clearWeek, generateShoppingList, setRecipeModal }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [picker, setPicker] = useState(null); // { dateISO, dayIdx, moment } | null
   const [viewMode, setViewMode] = useState("semaine"); // "jour" | "semaine"
+
+  // Glisser-déposer d'un repas planifié vers un autre créneau (vue Semaine).
+  const [drag, setDrag] = useState(null); // { planId, recipe, fromISO, fromMoment, w, h, offsetX, offsetY, x, y, overKey } | null
+  const slotRefs = useRef({});
+  const slotKey = (iso, moment) => `${iso}__${moment}`;
+  const registerSlot = (iso, moment) => (el) => { if (el) slotRefs.current[slotKey(iso, moment)] = el; };
+  const findSlotUnderPoint = (x, y) => {
+    for (const [key, el] of Object.entries(slotRefs.current)) {
+      const r = el.getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return key;
+    }
+    return null;
+  };
+  const startDrag = (e, planId, recipe, iso, moment) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const cardEl = slotRefs.current[slotKey(iso, moment)];
+    const rect = cardEl ? cardEl.getBoundingClientRect() : { width: 300, height: 60, left: e.clientX - 20, top: e.clientY - 20 };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDrag({
+      planId, recipe, fromISO: iso, fromMoment: moment,
+      w: rect.width, h: rect.height, offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top,
+      x: e.clientX, y: e.clientY, overKey: slotKey(iso, moment),
+    });
+  };
+  const onDragMove = (e) => {
+    setDrag((prev) => (prev ? { ...prev, x: e.clientX, y: e.clientY, overKey: findSlotUnderPoint(e.clientX, e.clientY) } : prev));
+  };
+  const endDrag = () => {
+    setDrag((prev) => {
+      if (!prev) return null;
+      if (prev.overKey) {
+        const [iso, moment] = prev.overKey.split("__");
+        if (iso !== prev.fromISO || moment !== prev.fromMoment) moveMeal(prev.planId, iso, moment);
+      }
+      return null;
+    });
+  };
 
   const monday = mondayOf(addDays(todayDate(), weekOffset * 7));
   const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
@@ -1919,17 +1957,31 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, clearWe
                   {daySlots.map(({ moment, slot }) => {
                     const recipe = slot ? data.recipes.find((r) => r.id === slot.recipe_id) : null;
                     const isPast = iso < todayISO;
+                    const key = slotKey(iso, moment);
+                    const isDragSource = drag && drag.fromISO === iso && drag.fromMoment === moment;
+                    const isDragOver = drag && drag.overKey === key && !isDragSource;
+                    const dropStyle = isDragOver ? { background: "var(--surface-2)", boxShadow: "inset 0 0 0 2px var(--terracotta)" } : null;
                     return recipe ? (
-                      <div key={moment} className="mp-meal-card" style={{ padding: 8, ...(isPast ? { opacity: .5 } : null) }} onClick={() => setRecipeModal(recipe.id)}>
+                      <div key={moment} ref={registerSlot(iso, moment)} className="mp-meal-card"
+                        style={{ padding: 8, ...(isPast ? { opacity: .5 } : null), ...(isDragSource ? { opacity: .3 } : null), ...dropStyle }}
+                        onClick={() => setRecipeModal(recipe.id)}>
                         <RecipeThumb recipe={recipe} className="mp-meal-thumb" style={{ width: 42, height: 42 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div className="mp-eyebrow" style={{ fontSize: 9.5 }}>{isPast ? "Fait" : MOMENT_LABEL[moment].toUpperCase()}</div>
                           <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{recipe.titre}</div>
                         </div>
+                        {!isPast && (
+                          <div style={{ touchAction: "none", cursor: "grab", padding: "2px 4px", color: "var(--ink-faint)", flexShrink: 0 }}
+                            onPointerDown={(e) => startDrag(e, slot.id, recipe, iso, moment)}
+                            onPointerMove={onDragMove} onPointerUp={endDrag} onPointerCancel={endDrag}
+                            onClick={(e) => e.stopPropagation()} aria-label="Déplacer ce repas">
+                            <GripVertical size={14} />
+                          </div>
+                        )}
                         <Trash2 size={13} style={{ cursor: "pointer", flexShrink: 0, color: "var(--ink-faint)" }} onClick={(e) => { e.stopPropagation(); removeFromPlan(slot.id); }} />
                       </div>
                     ) : (
-                      <div key={moment} className="mp-meal-slot-empty" style={{ padding: 9, fontSize: 12.5 }}
+                      <div key={moment} ref={registerSlot(iso, moment)} className="mp-meal-slot-empty" style={{ padding: 9, fontSize: 12.5, ...dropStyle }}
                         onClick={() => setPicker({ dateISO: iso, dayIdx: i, moment })}>
                         <Plus size={13} /> {MOMENT_LABEL[moment]}…
                       </div>
@@ -1964,6 +2016,18 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, clearWe
           likedRecipes={likedRecipes} weekRecipeIds={weekRecipeIds}
           onPick={(recipeId) => { addToPlan(picker.dateISO, picker.moment, recipeId); setPicker(null); }}
           onClose={() => setPicker(null)} />
+      )}
+
+      {drag && (
+        <div style={{ position: "fixed", left: drag.x - drag.offsetX, top: drag.y - drag.offsetY, width: drag.w, zIndex: 200, pointerEvents: "none", transform: "rotate(-1.5deg) scale(1.03)", boxShadow: "0 12px 28px rgba(42,33,21,.28)", borderRadius: 14 }}>
+          <div className="mp-meal-card" style={{ padding: 8, margin: 0 }}>
+            <RecipeThumb recipe={drag.recipe} className="mp-meal-thumb" style={{ width: 42, height: 42 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="mp-eyebrow" style={{ fontSize: 9.5 }}>{MOMENT_LABEL[drag.fromMoment].toUpperCase()}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{drag.recipe.titre}</div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -2788,7 +2852,7 @@ export default function MealPlannerApp() {
       setNavIndicator((s) => ({ ...s, visible: false }));
     }
   }, [screen]);
-  const isTabSwipeExcluded = (target) => target.closest && target.closest(".mp-overlay, .mp-swipe-card, .mp-scroll-x, .mp-day-strip, input, textarea, select");
+  const isTabSwipeExcluded = (target) => target.closest && target.closest(".mp-overlay, .mp-swipe-card, .mp-scroll-x, .mp-day-strip, .mp-meal-card, input, textarea, select");
   const resolveTabSwipe = (dx, dy) => {
     if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
     const idx = NAV_ORDER.indexOf(screen);
@@ -2881,6 +2945,21 @@ export default function MealPlannerApp() {
   }, [update]);
   const removeFromPlan = useCallback((planId) => {
     update((d) => { d.weeklyPlan = d.weeklyPlan.filter((p) => p.id !== planId); return d; });
+  }, [update]);
+  // Déplace un repas planifié vers un autre jour/moment (glisser-déposer dans le Planning).
+  // Si le créneau cible est déjà occupé, les deux repas échangent leur place.
+  const moveMeal = useCallback((planId, targetDateISO, targetMoment) => {
+    update((d) => {
+      const source = d.weeklyPlan.find((p) => p.id === planId);
+      if (!source) return d;
+      if (source.date === targetDateISO && source.moment === targetMoment) return d;
+      const target = d.weeklyPlan.find((p) => p.date === targetDateISO && p.moment === targetMoment && p.id !== planId);
+      const prevDate = source.date, prevMoment = source.moment;
+      source.date = targetDateISO;
+      source.moment = targetMoment;
+      if (target) { target.date = prevDate; target.moment = prevMoment; }
+      return d;
+    });
   }, [update]);
   const clearWeek = useCallback((weekDatesISO) => {
     update((d) => { d.weeklyPlan = d.weeklyPlan.filter((p) => !weekDatesISO.includes(p.date)); return d; });
@@ -3053,7 +3132,7 @@ export default function MealPlannerApp() {
   const screenProps = {
     discover: { data, deckRecipes, profileTagIds, useProfileFilter, setUseProfileFilter, discoverFilterTags, setDiscoverFilterTags, toggleLike, markSeen, unmarkSeen, resetDeck, setRecipeModal, goToProfile: () => setScreen("profile"), goToBrowse: () => setScreen("browse"), categoryFilter, setCategoryFilter },
     liked: { data, likedRecipes, likedSelection, setLikedSelection, setRecipeModal, update, goToDiscover: () => setScreen("discover") },
-    planning: { data, likedRecipes, addToPlan, removeFromPlan, clearWeek, generateShoppingList, setRecipeModal },
+    planning: { data, likedRecipes, addToPlan, removeFromPlan, moveMeal, clearWeek, generateShoppingList, setRecipeModal },
     shopping: { data, generateShoppingList, toggleShoppingItem, clearShoppingList, addManualShoppingItem, removeShoppingItem, goToPlanning: () => setScreen("planning"), addEssential, removeEssential, addEssentialToCart },
     create: { data, update, setRecipeModal },
     profile: { data, update, toggleAlimentExclu },
