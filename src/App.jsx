@@ -3,7 +3,7 @@ import {
   Heart, X, Info, ChevronLeft, ChevronRight, Plus, Trash2, Check,
   Pencil, ShoppingCart, CalendarDays, BookOpen, Sparkles, User,
   Search, ArrowLeft, RotateCcw, Minus, Image as ImageIcon, Menu, Utensils,
-  SlidersHorizontal, Download, Upload, LayoutGrid, GripVertical
+  SlidersHorizontal, Download, Upload, LayoutGrid
 } from "lucide-react";
 
 /* ----------------------------------------------------------------------
@@ -1010,6 +1010,14 @@ const STYLE = `
   .mp-meal-card {
     display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line);
     border-radius: 18px; padding: 10px; cursor: pointer;
+    transition: opacity .15s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .mp-meal-card--draggable { touch-action: none; user-select: none; -webkit-user-select: none; }
+  .mp-meal-card--dragging {
+    transform: scale(1.045);
+    box-shadow: 0 18px 34px rgba(42,33,21,.26), 0 3px 10px rgba(42,33,21,.14);
+    border-color: transparent;
+    transition: transform .18s cubic-bezier(.22,1,.36,1), box-shadow .18s cubic-bezier(.22,1,.36,1);
   }
   .mp-meal-thumb {
     width: 54px; height: 54px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: var(--surface-2);
@@ -1019,6 +1027,7 @@ const STYLE = `
   .mp-meal-slot-empty {
     display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px dashed var(--line);
     border-radius: 18px; padding: 16px; cursor: pointer; color: var(--ink-soft); font-size: 13.5px;
+    transition: background .15s ease, box-shadow .15s ease;
   }
   .mp-meal-slot-empty:hover { border-color: var(--ink-faint); color: var(--ink); }
 
@@ -1812,39 +1821,82 @@ function MealSlotPicker({ dateISO, moment, dayLabel, likedRecipes, weekRecipeIds
 const MOMENT_TIME = { midi: "12:30", soir: "19:30" };
 const MOMENT_LABEL = { midi: "Déjeuner", soir: "Dîner" };
 
+const LONG_PRESS_MS = 380;
+const LONG_PRESS_CANCEL_PX = 10;
+
 function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMeal, clearWeek, generateShoppingList, setRecipeModal }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [picker, setPicker] = useState(null); // { dateISO, dayIdx, moment } | null
   const [viewMode, setViewMode] = useState("semaine"); // "jour" | "semaine"
 
-  // Glisser-déposer d'un repas planifié vers un autre créneau (vue Semaine).
+  const monday = mondayOf(addDays(todayDate(), weekOffset * 7));
+  const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+  const weekDatesISO = weekDates.map(isoDate);
+  const todayISO = isoDate(todayDate());
+  const weekPlanItems = data.weeklyPlan.filter((p) => weekDatesISO.includes(p.date));
+  const weekPlanCount = weekPlanItems.length;
+  const weekRecipeIds = new Set(weekPlanItems.map((p) => p.recipe_id));
+
+  // Glisser-déposer un repas planifié vers un autre créneau (vue Semaine), déclenché par un
+  // appui long directement sur la carte — pas de poignée dédiée, comme un réordonnancement iOS.
   const [drag, setDrag] = useState(null); // { planId, recipe, fromISO, fromMoment, w, h, offsetX, offsetY, x, y, overKey } | null
   const slotRefs = useRef({});
   const slotKey = (iso, moment) => `${iso}__${moment}`;
   const registerSlot = (iso, moment) => (el) => { if (el) slotRefs.current[slotKey(iso, moment)] = el; };
-  const findSlotUnderPoint = (x, y) => {
-    for (const [key, el] of Object.entries(slotRefs.current)) {
-      const r = el.getBoundingClientRect();
-      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return key;
-    }
-    return null;
+  const longPressTimerRef = useRef(null);
+  const pressOriginRef = useRef(null); // { pointerId, el, planId, recipe, iso, moment, startX, startY }
+  const cachedRectsRef = useRef([]);
+  const rafRef = useRef(null);
+  const latestPointRef = useRef({ x: 0, y: 0 });
+  const suppressClickRef = useRef(false);
+
+  const clearLongPress = () => {
+    if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
+    pressOriginRef.current = null;
   };
-  const startDrag = (e, planId, recipe, iso, moment) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const cardEl = slotRefs.current[slotKey(iso, moment)];
-    const rect = cardEl ? cardEl.getBoundingClientRect() : { width: 300, height: 60, left: e.clientX - 20, top: e.clientY - 20 };
-    e.currentTarget.setPointerCapture(e.pointerId);
+  const engageDrag = () => {
+    const origin = pressOriginRef.current;
+    longPressTimerRef.current = null;
+    if (!origin) return;
+    try { origin.el.setPointerCapture(origin.pointerId); } catch {}
+    const rect = origin.el.getBoundingClientRect();
+    cachedRectsRef.current = Object.entries(slotRefs.current).map(([key, el]) => ({ key, rect: el.getBoundingClientRect() }));
+    suppressClickRef.current = true;
+    if (navigator.vibrate) { try { navigator.vibrate(10); } catch {} }
     setDrag({
-      planId, recipe, fromISO: iso, fromMoment: moment,
-      w: rect.width, h: rect.height, offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top,
-      x: e.clientX, y: e.clientY, overKey: slotKey(iso, moment),
+      planId: origin.planId, recipe: origin.recipe, fromISO: origin.iso, fromMoment: origin.moment,
+      w: rect.width, h: rect.height, offsetX: origin.startX - rect.left, offsetY: origin.startY - rect.top,
+      x: origin.startX, y: origin.startY, overKey: slotKey(origin.iso, origin.moment),
     });
   };
-  const onDragMove = (e) => {
-    setDrag((prev) => (prev ? { ...prev, x: e.clientX, y: e.clientY, overKey: findSlotUnderPoint(e.clientX, e.clientY) } : prev));
+  const onCardPointerDown = (e, planId, recipe, iso, moment) => {
+    if (iso < todayISO) return; // repas déjà "Fait" : pas de déplacement
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    clearLongPress();
+    pressOriginRef.current = { pointerId: e.pointerId, el: e.currentTarget, planId, recipe, iso, moment, startX: e.clientX, startY: e.clientY };
+    longPressTimerRef.current = setTimeout(engageDrag, LONG_PRESS_MS);
   };
-  const endDrag = () => {
+  const onCardPointerMove = (e) => {
+    if (drag) {
+      latestPointRef.current = { x: e.clientX, y: e.clientY };
+      if (rafRef.current == null) {
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = null;
+          const { x, y } = latestPointRef.current;
+          const hit = cachedRectsRef.current.find((s) => x >= s.rect.left && x <= s.rect.right && y >= s.rect.top && y <= s.rect.bottom);
+          setDrag((prev) => (prev ? { ...prev, x, y, overKey: hit ? hit.key : prev.overKey } : prev));
+        });
+      }
+      return;
+    }
+    const origin = pressOriginRef.current;
+    if (!origin) return;
+    const dx = e.clientX - origin.startX, dy = e.clientY - origin.startY;
+    if (Math.hypot(dx, dy) > LONG_PRESS_CANCEL_PX) clearLongPress();
+  };
+  const onCardPointerUp = () => {
+    clearLongPress();
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
     setDrag((prev) => {
       if (!prev) return null;
       if (prev.overKey) {
@@ -1854,14 +1906,22 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
       return null;
     });
   };
-
-  const monday = mondayOf(addDays(todayDate(), weekOffset * 7));
-  const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
-  const weekDatesISO = weekDates.map(isoDate);
-  const todayISO = isoDate(todayDate());
-  const weekPlanItems = data.weeklyPlan.filter((p) => weekDatesISO.includes(p.date));
-  const weekPlanCount = weekPlanItems.length;
-  const weekRecipeIds = new Set(weekPlanItems.map((p) => p.recipe_id));
+  const onCardClick = (recipeId) => {
+    if (suppressClickRef.current) { suppressClickRef.current = false; return; }
+    setRecipeModal(recipeId);
+  };
+  // Filet de sécurité : si le relâchement n'atteint jamais la carte d'origine (le pointeur capturé
+  // n'a par ex. pas pu être posé), on résout quand même le glissement pour ne jamais rester bloqué.
+  useEffect(() => {
+    if (!drag) return;
+    const resolve = () => onCardPointerUp();
+    window.addEventListener("pointerup", resolve);
+    window.addEventListener("pointercancel", resolve);
+    return () => {
+      window.removeEventListener("pointerup", resolve);
+      window.removeEventListener("pointercancel", resolve);
+    };
+  }, [drag]); // eslint-disable-line
 
   const [selectedISO, setSelectedISO] = useState(() => (weekDatesISO.includes(todayISO) ? todayISO : weekDatesISO[0]));
   useEffect(() => { if (!weekDatesISO.includes(selectedISO)) setSelectedISO(weekDatesISO[0]); }, [weekOffset]); // eslint-disable-line
@@ -1962,22 +2022,16 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
                     const isDragOver = drag && drag.overKey === key && !isDragSource;
                     const dropStyle = isDragOver ? { background: "var(--surface-2)", boxShadow: "inset 0 0 0 2px var(--terracotta)" } : null;
                     return recipe ? (
-                      <div key={moment} ref={registerSlot(iso, moment)} className="mp-meal-card"
-                        style={{ padding: 8, ...(isPast ? { opacity: .5 } : null), ...(isDragSource ? { opacity: .3 } : null), ...dropStyle }}
-                        onClick={() => setRecipeModal(recipe.id)}>
+                      <div key={moment} ref={registerSlot(iso, moment)} className={`mp-meal-card ${isPast ? "" : "mp-meal-card--draggable"}`}
+                        style={{ padding: 8, ...(isPast ? { opacity: .5 } : null), ...(isDragSource ? { opacity: .25 } : null), ...dropStyle }}
+                        onClick={() => onCardClick(recipe.id)}
+                        onPointerDown={(e) => onCardPointerDown(e, slot.id, recipe, iso, moment)}
+                        onPointerMove={onCardPointerMove} onPointerUp={onCardPointerUp} onPointerCancel={onCardPointerUp}>
                         <RecipeThumb recipe={recipe} className="mp-meal-thumb" style={{ width: 42, height: 42 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div className="mp-eyebrow" style={{ fontSize: 9.5 }}>{isPast ? "Fait" : MOMENT_LABEL[moment].toUpperCase()}</div>
                           <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{recipe.titre}</div>
                         </div>
-                        {!isPast && (
-                          <div style={{ touchAction: "none", cursor: "grab", padding: "2px 4px", color: "var(--ink-faint)", flexShrink: 0 }}
-                            onPointerDown={(e) => startDrag(e, slot.id, recipe, iso, moment)}
-                            onPointerMove={onDragMove} onPointerUp={endDrag} onPointerCancel={endDrag}
-                            onClick={(e) => e.stopPropagation()} aria-label="Déplacer ce repas">
-                            <GripVertical size={14} />
-                          </div>
-                        )}
                         <Trash2 size={13} style={{ cursor: "pointer", flexShrink: 0, color: "var(--ink-faint)" }} onClick={(e) => { e.stopPropagation(); removeFromPlan(slot.id); }} />
                       </div>
                     ) : (
@@ -2019,8 +2073,8 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
       )}
 
       {drag && (
-        <div style={{ position: "fixed", left: drag.x - drag.offsetX, top: drag.y - drag.offsetY, width: drag.w, zIndex: 200, pointerEvents: "none", transform: "rotate(-1.5deg) scale(1.03)", boxShadow: "0 12px 28px rgba(42,33,21,.28)", borderRadius: 14 }}>
-          <div className="mp-meal-card" style={{ padding: 8, margin: 0 }}>
+        <div style={{ position: "fixed", left: drag.x - drag.offsetX, top: drag.y - drag.offsetY, width: drag.w, zIndex: 200, pointerEvents: "none" }}>
+          <div className="mp-meal-card mp-meal-card--dragging" style={{ padding: 8, margin: 0 }}>
             <RecipeThumb recipe={drag.recipe} className="mp-meal-thumb" style={{ width: 42, height: 42 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="mp-eyebrow" style={{ fontSize: 9.5 }}>{MOMENT_LABEL[drag.fromMoment].toUpperCase()}</div>
