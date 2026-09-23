@@ -1212,11 +1212,12 @@ const STYLE = `
     border-radius: 18px; padding: 10px; cursor: pointer;
     transition: opacity .15s ease, background .15s ease, box-shadow .15s ease;
   }
-  /* Pas de touch-action: none ici — le défilement vertical doit marcher normalement même en
-     partant d'une carte. Une fois l'appui long confirmé, c'est preventDefault() dans
-     onCardPointerMove qui coupe le scroll pour la suite du geste (plus fiable sur mobile
-     qu'un changement de touch-action en cours de geste, notamment sur iOS). */
-  .mp-meal-card--draggable { user-select: none; -webkit-user-select: none; }
+  /* touch-action: none en permanence — changer cette valeur en cours de geste s'est révélé
+     invisible sur mobile (Chrome comme Safari figent tôt leur décision de scroll). Le défilement
+     vertical est donc entièrement réimplémenté à la main en JS tant que l'appui long n'a pas
+     déclenché le glisser-déposer (voir onCardPointerDown/onCardPointerMove) : un mécanisme qui
+     ne dépend plus du tout de l'arbitrage scroll/drag du navigateur. */
+  .mp-meal-card--draggable { touch-action: none; user-select: none; -webkit-user-select: none; }
   .mp-meal-card--dragging {
     transform: scale(1.045);
     box-shadow: 0 18px 34px rgba(42,33,21,.26), 0 3px 10px rgba(42,33,21,.14);
@@ -2105,15 +2106,17 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
     if (iso < todayISO) return; // repas déjà "Fait" : pas de déplacement
     if (e.pointerType === "mouse" && e.button !== 0) return;
     clearLongPress();
-    pressOriginRef.current = { pointerId: e.pointerId, el: e.currentTarget, planId, recipe, iso, moment, startX: e.clientX, startY: e.clientY };
+    // touch-action: none est permanent sur ces cartes (voir CSS) — un changement en cours de
+    // geste ne marche pas de façon fiable sur mobile (le navigateur fige tôt sa décision de
+    // scroll). Tant que l'appui long n'a pas déclenché le glisser-déposer, on simule donc
+    // nous-mêmes le défilement vertical si le doigt bouge, via le conteneur défilant le plus
+    // proche — un mécanisme entièrement sous notre contrôle, sans dépendre du navigateur.
+    const scrollEl = e.currentTarget.closest(".mp-slide-pane");
+    pressOriginRef.current = { pointerId: e.pointerId, el: e.currentTarget, planId, recipe, iso, moment, startX: e.clientX, startY: e.clientY, scrollEl, lastY: e.clientY, scrolling: false };
     longPressTimerRef.current = setTimeout(engageDrag, LONG_PRESS_MS);
   };
   const onCardPointerMove = (e) => {
     if (activeDragRef.current) {
-      // Empêche le scroll de la page de "voler" le geste une fois le glisser-déposer engagé —
-      // contrairement à touch-action, preventDefault() est évalué à chaque mouvement et marche
-      // même quand touch-action valait "auto" au moment où le doigt a touché l'écran.
-      e.preventDefault();
       latestPointRef.current = { x: e.clientX, y: e.clientY };
       if (rafRef.current == null) {
         rafRef.current = requestAnimationFrame(() => {
@@ -2128,7 +2131,14 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
     const origin = pressOriginRef.current;
     if (!origin) return;
     const dx = e.clientX - origin.startX, dy = e.clientY - origin.startY;
-    if (Math.hypot(dx, dy) > LONG_PRESS_CANCEL_PX) clearLongPress();
+    if (!origin.scrolling && Math.hypot(dx, dy) > LONG_PRESS_CANCEL_PX) {
+      if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
+      origin.scrolling = true;
+    }
+    if (origin.scrolling && origin.scrollEl) {
+      origin.scrollEl.scrollTop -= e.clientY - origin.lastY;
+      origin.lastY = e.clientY;
+    }
   };
   const onCardPointerUp = (e) => {
     clearLongPress();
