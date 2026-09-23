@@ -1213,8 +1213,9 @@ const STYLE = `
     transition: opacity .15s ease, background .15s ease, box-shadow .15s ease;
   }
   /* Pas de touch-action: none ici — le défilement vertical doit marcher normalement même en
-     partant d'une carte. Le glisser-déposer coupe le scroll dynamiquement (voir engageDrag),
-     seulement une fois l'appui long confirmé, pendant que le doigt est encore immobile. */
+     partant d'une carte. Une fois l'appui long confirmé, c'est preventDefault() dans
+     onCardPointerMove qui coupe le scroll pour la suite du geste (plus fiable sur mobile
+     qu'un changement de touch-action en cours de geste, notamment sur iOS). */
   .mp-meal-card--draggable { user-select: none; -webkit-user-select: none; }
   .mp-meal-card--dragging {
     transform: scale(1.045);
@@ -2088,14 +2089,11 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
     longPressTimerRef.current = null;
     if (!origin) return;
     try { origin.el.setPointerCapture(origin.pointerId); } catch {}
-    // Le doigt est encore immobile à cet instant précis (sinon clearLongPress aurait déjà annulé
-    // l'appui long) : couper le scroll maintenant ne casse aucun défilement déjà en cours.
-    origin.el.style.touchAction = "none";
     const rect = origin.el.getBoundingClientRect();
     cachedRectsRef.current = Object.entries(slotRefs.current).map(([key, el]) => ({ key, rect: el.getBoundingClientRect() }));
     suppressClickRef.current = true;
     resolvedRef.current = false;
-    activeDragRef.current = { planId: origin.planId, recipe: origin.recipe, fromISO: origin.iso, fromMoment: origin.moment, el: origin.el };
+    activeDragRef.current = { planId: origin.planId, recipe: origin.recipe, fromISO: origin.iso, fromMoment: origin.moment };
     if (navigator.vibrate) { try { navigator.vibrate(10); } catch {} }
     setDrag({
       planId: origin.planId, recipe: origin.recipe, fromISO: origin.iso, fromMoment: origin.moment,
@@ -2112,6 +2110,10 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
   };
   const onCardPointerMove = (e) => {
     if (activeDragRef.current) {
+      // Empêche le scroll de la page de "voler" le geste une fois le glisser-déposer engagé —
+      // contrairement à touch-action, preventDefault() est évalué à chaque mouvement et marche
+      // même quand touch-action valait "auto" au moment où le doigt a touché l'écran.
+      e.preventDefault();
       latestPointRef.current = { x: e.clientX, y: e.clientY };
       if (rafRef.current == null) {
         rafRef.current = requestAnimationFrame(() => {
@@ -2135,7 +2137,6 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
     if (!active || resolvedRef.current) return;
     resolvedRef.current = true;
     activeDragRef.current = null;
-    if (active.el) active.el.style.touchAction = "";
     // On recalcule la cible exactement à la position de relâchement plutôt que de se fier au
     // dernier `overKey` commité (mis à jour au rythme de requestAnimationFrame) : un relâchement
     // très rapide pourrait sinon intervenir avant la dernière mise à jour visuelle.
