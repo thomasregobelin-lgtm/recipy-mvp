@@ -1212,7 +1212,10 @@ const STYLE = `
     border-radius: 18px; padding: 10px; cursor: pointer;
     transition: opacity .15s ease, background .15s ease, box-shadow .15s ease;
   }
-  .mp-meal-card--draggable { touch-action: none; user-select: none; -webkit-user-select: none; }
+  /* Pas de touch-action: none ici — le défilement vertical doit marcher normalement même en
+     partant d'une carte. Le glisser-déposer coupe le scroll dynamiquement (voir engageDrag),
+     seulement une fois l'appui long confirmé, pendant que le doigt est encore immobile. */
+  .mp-meal-card--draggable { user-select: none; -webkit-user-select: none; }
   .mp-meal-card--dragging {
     transform: scale(1.045);
     box-shadow: 0 18px 34px rgba(42,33,21,.26), 0 3px 10px rgba(42,33,21,.14);
@@ -2085,11 +2088,14 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
     longPressTimerRef.current = null;
     if (!origin) return;
     try { origin.el.setPointerCapture(origin.pointerId); } catch {}
+    // Le doigt est encore immobile à cet instant précis (sinon clearLongPress aurait déjà annulé
+    // l'appui long) : couper le scroll maintenant ne casse aucun défilement déjà en cours.
+    origin.el.style.touchAction = "none";
     const rect = origin.el.getBoundingClientRect();
     cachedRectsRef.current = Object.entries(slotRefs.current).map(([key, el]) => ({ key, rect: el.getBoundingClientRect() }));
     suppressClickRef.current = true;
     resolvedRef.current = false;
-    activeDragRef.current = { planId: origin.planId, recipe: origin.recipe, fromISO: origin.iso, fromMoment: origin.moment };
+    activeDragRef.current = { planId: origin.planId, recipe: origin.recipe, fromISO: origin.iso, fromMoment: origin.moment, el: origin.el };
     if (navigator.vibrate) { try { navigator.vibrate(10); } catch {} }
     setDrag({
       planId: origin.planId, recipe: origin.recipe, fromISO: origin.iso, fromMoment: origin.moment,
@@ -2129,6 +2135,7 @@ function PlanningScreen({ data, likedRecipes, addToPlan, removeFromPlan, moveMea
     if (!active || resolvedRef.current) return;
     resolvedRef.current = true;
     activeDragRef.current = null;
+    if (active.el) active.el.style.touchAction = "";
     // On recalcule la cible exactement à la position de relâchement plutôt que de se fier au
     // dernier `overKey` commité (mis à jour au rythme de requestAnimationFrame) : un relâchement
     // très rapide pourrait sinon intervenir avant la dernière mise à jour visuelle.
