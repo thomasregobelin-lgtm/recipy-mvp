@@ -804,7 +804,7 @@ function parseIngredientsText(text) {
 
 // Devine un rayon pour un ingrédient, uniquement pour regrouper visuellement la
 // liste de courses (aucun système de stock/catalogue derrière — juste de l'affichage).
-const CATEGORY_ORDER = ["Fruits & légumes", "Frais", "Boucherie & poisson", "Épicerie", "Surgelé", "Boissons", "Autre"];
+const CATEGORY_ORDER = ["Fruits & légumes", "Frais", "Boucherie & poisson", "Épicerie", "Surgelé", "Boissons", "Maison & hygiène", "Autre"];
 const CATEGORY_KEYWORDS = {
   "Fruits & légumes": ["tomate", "avocat", "citron", "carotte", "courgette", "oignon", "ail", "poivron", "pomme de terre", "salade", "concombre", "brocoli", "champignon", "potiron", "châtaigne", "mangue", "radis", "herbe", "basilic", "ciboulette", "thym", "persil", "fruit", "légume", "banane", "pomme", "poire", "orange", "épinard", "haricot vert"],
   "Frais": ["crème", "lait", "beurre", "œuf", "fromage", "parmesan", "feta", "gruyère", "yaourt", "béchamel", "houmous"],
@@ -812,6 +812,7 @@ const CATEGORY_KEYWORDS = {
   "Épicerie": ["pâtes", "spaghetti", "riz", "farine", "sucre", "sel", "poivre", "épice", "curry", "cumin", "huile", "vinaigre", "levure", "pain", "quinoa", "lentille", "pois chiche", "haricot rouge", "maïs", "conserve", "café", "thé", "biscuit"],
   "Surgelé": ["surgelé", "glace"],
   "Boissons": ["eau", "jus", "soda", "vin", "bière"],
+  "Maison & hygiène": ["papier toilette", "sopalin", "essuie-tout", "dentifrice", "liquide vaisselle", "lessive", "litière", "mouchoir", "savon", "shampoing", "gel douche", "déodorant", "éponge", "sac poubelle", "ampoule", "pile", "javel", "nettoyant", "brosse à dents", "rasoir", "coton", "protection hygiénique", "couche"],
 };
 function guessCategory(nom) {
   const n = normalizeName(nom);
@@ -2359,8 +2360,9 @@ function AddShoppingItemModal({ data, onClose, onAdd }) {
       </div>
       <div className="mp-field" style={{ position: "relative" }}>
         <label className="mp-label">Article</label>
-        <input className="mp-input" autoFocus placeholder="Rechercher ou saisir un nouvel article…" value={query}
+        <input className="mp-input" autoFocus placeholder="Ex. Tomates, ampoules, dentifrice…" value={query}
           onChange={(e) => { setQuery(e.target.value); setSelected(null); }} />
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 4 }}>Alimentaire ou non — tout ce qui va dans ton panier a sa place ici.</div>
         {matches.length > 0 && (
           <div style={{ position: "absolute", top: 62, left: 0, right: 0, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 8, zIndex: 5 }}>
             {matches.map((m) => (
@@ -2430,59 +2432,38 @@ function ShoppingScreen({ data, generateShoppingList, toggleShoppingItem, clearS
       </div>
       {showAddItem && <AddShoppingItemModal data={data} onClose={() => setShowAddItem(false)} onAdd={addManualShoppingItem} />}
 
-      <div className="mp-card" style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <div className="mp-serif" style={{ fontSize: 15, fontWeight: 600 }}>Essentiels du quotidien</div>
-          <button className="mp-round-btn" style={{ width: 32, height: 32 }} onClick={() => setManageEssentials((s) => !s)} aria-label="Gérer les essentiels">
-            {manageEssentials ? <Check size={14} /> : <SlidersHorizontal size={13} />}
+      {/* Génération depuis le planning — la source principale de la liste, mais compacte :
+          navigation de semaine et bouton sur une seule ligne pour laisser la place à la liste. */}
+      <div className="mp-card" style={{ marginBottom: 16, padding: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button className="mp-round-btn" style={{ width: 26, height: 26 }} onClick={() => setWeekStart(isoDate(addDays(weekStartDate, -7)))} aria-label="Semaine précédente"><ChevronLeft size={13} /></button>
+            <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>{formatShort(weekStartDate)} – {formatShort(weekEndDate)}</span>
+            <button className="mp-round-btn" style={{ width: 26, height: 26 }} onClick={() => setWeekStart(isoDate(addDays(weekStartDate, 7)))} aria-label="Semaine suivante"><ChevronRight size={13} /></button>
+          </div>
+          <button className="mp-btn mp-btn-sage" style={{ color: "#fff", padding: "6px 12px", fontSize: 12.5 }}
+            onClick={() => generateShoppingList(weekStart)} disabled={weekPlanCount === 0}>
+            <RotateCcw size={12} /> Générer ({weekPlanCount})
           </button>
         </div>
-        <div style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>
-          Note ici ce qui te manque à la maison (dentifrice, lessive, litière…) et pioche-le d'un tap quand tu fais les courses.
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-          {data.essentials.map((e) => (
-            <span key={e.id} className="mp-tag clickable" style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
-              onClick={() => (manageEssentials ? removeEssential(e.id) : addEssentialToCart(e))}>
-              {e.nom} {manageEssentials ? <X size={11} /> : <Plus size={11} />}
-            </span>
-          ))}
-          {data.essentials.length === 0 && <span style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>Aucun essentiel pour l'instant.</span>}
-        </div>
-        <div style={{ display: "flex", gap: 6 }}>
-          <input className="mp-input" placeholder="Ex. Papier toilette" value={newEssential}
-            onChange={(e) => setNewEssential(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && newEssential.trim()) { addEssential(newEssential.trim()); setNewEssential(""); } }} />
-          <button className="mp-btn mp-btn-ghost" disabled={!newEssential.trim()}
-            onClick={() => { if (newEssential.trim()) { addEssential(newEssential.trim()); setNewEssential(""); } }}>
-            <Plus size={14} />
-          </button>
-        </div>
-      </div>
-
-      {generatedFromPlan && weekPlanRecipes.length > 0 && (
-        <div className="mp-card" style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-            <Sparkles size={13} color="var(--sage-deep)" />
-            <span className="mp-eyebrow">Générée automatiquement</span>
-          </div>
-          <div style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 14 }}>
-            Cette liste combine les ingrédients des <b>{weekPlanRecipes.length} recette{weekPlanRecipes.length !== 1 ? "s" : ""} de votre planning</b> de la semaine.
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <div style={{ display: "flex" }}>
+        {generatedFromPlan && weekPlanRecipes.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--line)" }}>
+            <div style={{ display: "flex", flexShrink: 0 }}>
               {weekPlanRecipes.slice(0, 5).map((r, i) => (
-                <RecipeThumb key={r.id} recipe={r} className="mp-mini-thumb" style={{ marginLeft: i > 0 ? -10 : 0, zIndex: 5 - i }} />
+                <RecipeThumb key={r.id} recipe={r} className="mp-mini-thumb" style={{ marginLeft: i > 0 ? -10 : 0, zIndex: 5 - i, width: 26, height: 26 }} />
               ))}
             </div>
+            <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>
+              Généré depuis {weekPlanRecipes.length} recette{weekPlanRecipes.length !== 1 ? "s" : ""}
+            </span>
             {goToPlanning && (
-              <button className="mp-btn mp-btn-ghost" style={{ color: "var(--sage-deep)", fontWeight: 700, padding: "4px 2px", flexShrink: 0 }} onClick={goToPlanning}>
-                Gérer le planning <ChevronRight size={14} />
+              <button className="mp-btn mp-btn-ghost" style={{ color: "var(--sage-deep)", fontWeight: 700, padding: "2px", fontSize: 11.5, marginLeft: "auto", flexShrink: 0 }} onClick={goToPlanning}>
+                Planning <ChevronRight size={12} />
               </button>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {total > 0 && (
         <div className="mp-progress-card" style={{ marginBottom: 18 }}>
@@ -2495,22 +2476,12 @@ function ShoppingScreen({ data, generateShoppingList, toggleShoppingItem, clearS
         </div>
       )}
 
-      <div className="mp-cal-nav" style={{ marginBottom: 12 }}>
-        <button className="mp-round-btn" style={{ width: 32, height: 32 }} onClick={() => setWeekStart(isoDate(addDays(weekStartDate, -7)))}><ChevronLeft size={15} /></button>
-        <span style={{ fontSize: 13, color: "var(--ink-soft)" }}>Semaine du {formatShort(weekStartDate)} au {formatShort(weekEndDate)}</span>
-        <button className="mp-round-btn" style={{ width: 32, height: 32 }} onClick={() => setWeekStart(isoDate(addDays(weekStartDate, 7)))}><ChevronRight size={15} /></button>
-      </div>
-
-      <button className="mp-btn mp-btn-sage" style={{ color: "#fff", marginBottom: 20 }} onClick={() => generateShoppingList(weekStart)} disabled={weekPlanCount === 0}>
-        <RotateCcw size={14} /> Générer depuis cette semaine ({weekPlanCount} recette{weekPlanCount !== 1 ? "s" : ""} planifiée{weekPlanCount !== 1 ? "s" : ""})
-      </button>
-
       {data.shoppingList.length === 0 ? (
         <div className="mp-card" style={{ textAlign: "center", padding: "34px 20px", color: "var(--ink-soft)" }}>
           <ShoppingCart size={26} style={{ opacity: 0.4, marginBottom: 10 }} />
           <div className="mp-serif" style={{ fontSize: 16, color: "var(--ink)", marginBottom: 4 }}>Panier vide</div>
           <div style={{ fontSize: 13, lineHeight: 1.5 }}>
-            {weekPlanCount === 0 ? "Planifie des recettes sur cette semaine, pioche dans tes essentiels ci-dessus, ou ajoute un article directement." : "Clique sur « Générer depuis cette semaine » pour construire ta liste."}
+            {weekPlanCount === 0 ? "Planifie des recettes pour remplir ta liste automatiquement, ou ajoute un article directement plus bas." : "Clique sur « Générer » ci-dessus pour construire ta liste depuis ton planning."}
           </div>
         </div>
       ) : (
@@ -2553,7 +2524,42 @@ function ShoppingScreen({ data, generateShoppingList, toggleShoppingItem, clearS
         ))
       )}
 
-      <button className="mp-btn mp-btn-primary" style={{ width: "100%", justifyContent: "center", marginTop: 18 }} onClick={() => setShowAddItem(true)}>
+      {/* Ajout rapide — les essentiels ne sont plus une liste à part : c'est un raccourci
+          pour remplir le panier avec ce qu'on reprend souvent (alimentaire ou non). */}
+      <div style={{ marginTop: 22, marginBottom: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <span className="mp-label" style={{ margin: 0 }}>Ajout rapide</span>
+          <button className="mp-round-btn" style={{ width: 26, height: 26 }} onClick={() => setManageEssentials((s) => !s)} aria-label="Gérer mes essentiels">
+            {manageEssentials ? <Check size={12} /> : <SlidersHorizontal size={11} />}
+          </button>
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: manageEssentials ? 8 : 0 }}>
+          {data.essentials.map((e) => (
+            <span key={e.id} className="mp-tag clickable" style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+              onClick={() => (manageEssentials ? removeEssential(e.id) : addEssentialToCart(e))}>
+              {e.nom} {manageEssentials ? <X size={11} /> : <Plus size={11} />}
+            </span>
+          ))}
+          {data.essentials.length === 0 && (
+            <span style={{ fontSize: 12, color: "var(--ink-faint)" }}>
+              Ce que tu reprends souvent (dentifrice, lessive, litière…) — ajoute-le ici pour le retrouver d'un tap la prochaine fois.
+            </span>
+          )}
+        </div>
+        {manageEssentials && (
+          <div style={{ display: "flex", gap: 6 }}>
+            <input className="mp-input" placeholder="Ex. Papier toilette, dentifrice…" value={newEssential}
+              onChange={(e) => setNewEssential(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && newEssential.trim()) { addEssential(newEssential.trim()); setNewEssential(""); } }} />
+            <button className="mp-btn mp-btn-ghost" disabled={!newEssential.trim()}
+              onClick={() => { if (newEssential.trim()) { addEssential(newEssential.trim()); setNewEssential(""); } }}>
+              <Plus size={14} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <button className="mp-btn mp-btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={() => setShowAddItem(true)}>
         <Plus size={14} /> Ajouter un article
       </button>
     </div>
